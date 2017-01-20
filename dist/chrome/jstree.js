@@ -1,6 +1,24 @@
 /*globals jQuery, define, module, exports, require, window, document, postMessage */
 (function (jQuery) {
 	"use strict";
+
+ var storageApi = {
+	 items: [],
+	 addNewItem: function(item) {
+		 this.items.push(item);
+		 window.localStorage.setItem("snipettor-storage-items", JSON.stringify(this.items));
+	 },
+	 init: function() {
+		 try {
+		   this.items = JSON.parse(window.localStorage.getItem("snipettor-storage-items"));
+	   } catch (e) {
+			 this.items = [];
+		 }
+	 }
+ };
+ // init storage api
+ storageApi.init();
+
  var snippetorUiApi = {
 	 bubbleElement: null,
 	 url: null,
@@ -27,11 +45,19 @@
 		 evt.stopPropagation();
 	 },
 	 snippetsList: null,
-	 showNewItem: function(data, url) {
+	 showNewItem: function(data, url, isInit) {
 		 var payload = url.length > 20 ? url.substr(url.length -20): url;
 		 this.snippetsList = document.getElementById("menu-snippets-list");
 		 this.snippetsList.innerHTML += '<li><a aria-label="'+url+'">'+payload+'</a></li><li class="snippet-separator-arrow-right"></li>';
+		 if (!isInit)
+		   storageApi.addNewItem({data:data, url:url});
 		 console.log("Show new item: " + data);
+	 },
+	 init: function() {
+		 for (var x in storageApi.items) {
+			 var tmp = storageApi.items[x];
+			 this.showNewItem(tmp.data, tmp.url, true);
+		 }
 	 }
  };
 
@@ -59,6 +85,7 @@
 <button id="snipettor-bubble-dialog-save">Save</button>\
 <button id="snipettor-bubble-dialog-cancel">Cancel</button></div>';
 
+ snippetorUiApi.init();
   // Show/hide top menu
   var snippetorToggleAction = document.getElementById("menu-dddd");
 	if (snippetorToggleAction) {
