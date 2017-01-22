@@ -120,7 +120,9 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
     },
     openItem: function(itemId) {
       console.dir(sender.tab);
-      chrome.tabs.create({url: "http://google.com", active:true});
+      chrome.tabs.create({'url': "http://google.com", active:true}, function(x) {
+        console.dir(arguments);
+      });
       sendRes(true);
     }
   };
