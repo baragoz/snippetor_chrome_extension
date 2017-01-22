@@ -2,8 +2,9 @@
 
 var cachedTabs = [];
 
+
+
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-  console.dir(tab);
   if (changeInfo.status !== 'loading') return;
 
   chrome.tabs.executeScript(tabId, {
@@ -33,6 +34,9 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     }
   });
 });
+
+var workingEnvironment = [];
+var snippetsList = [];
 
 chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
   var handler = {
@@ -78,10 +82,50 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
         });
       }
       return true;
+    },
+    initialItems: function(payload) {
+      console.log("GET INITIAL ITEMS: " + sender.tab.id);
+      // has opened snippet
+      console.dir(workingEnvironment);
+      var pos = workingEnvironment[sender.tab.id];
+      if (pos != undefined && pos >= 0) {
+        return sendRes({working: pos, snippets: snippetsList});
+      }
+      console.log("GET INITIAL ITEMS EMPTY");
+      sendRes({snippets: snippetsList});
+    },
+    createSnippet: function(payload) {
+      console.log("CREATE SNIPPET !Q!!!! " + snippetsList.length );
+      // init snippet by id
+      workingEnvironment[sender.tab.id] = snippetsList.length;
+      snippetsList.push({title: payload.title, items:[]});
+      sendRes({working: workingEnvironment[sender.tab.id]});
+    },
+    closeSnippet: function(data) {
+      workingEnvironment[sender.tab.id] = null;
+    },
+    addNewItem: function(payload) {
+       var pos = workingEnvironment[sender.tab.id];
+       console.log("POSITION IS: " + pos);
+       console.dir(payload);
+       if (pos != undefined) {
+         console.log("ADD PAYLOAD");
+         snippetsList[pos].items.push(payload);
+         sendRes(true);
+         return true;
+       }
+      sendRes(false);
+       return false;
+
+    },
+    openItem: function(itemId) {
+      console.dir(sender.tab);
+      chrome.tabs.create({url: "http://google.com", active:true});
+      sendRes(true);
     }
   };
-
-  return handler[req.type]();
+  console.log("HANDLE :" + req.type);
+  return handler[req.type](req.payload);
 });
 
 function eachTask(tasks, done) {
