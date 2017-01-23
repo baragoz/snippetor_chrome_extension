@@ -119,10 +119,19 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
 
     },
     openItem: function(itemId) {
-      console.dir(sender.tab);
-      chrome.tabs.create({'url': "http://google.com", active:true}, function(x) {
-        console.dir(arguments);
-      });
+      console.log(itemId);
+      var pos = workingEnvironment[sender.tab.id];
+      if (snippetsList[pos].items.length > itemId) {
+        console.dir(snippetsList[pos]);
+        var x_url = snippetsList[pos].items[itemId].url;
+        var xx_url = x_url.substr(0, x_url.lastIndexOf(":")) + "#L" + x_url.substr(x_url.lastIndexOf(":") + 1);
+        console.log(xx_url);
+        chrome.tabs.update({'url': xx_url, active:true}, function(x) {
+          console.dir(arguments);
+        });
+      }
+
+
       sendRes(true);
     }
   };
