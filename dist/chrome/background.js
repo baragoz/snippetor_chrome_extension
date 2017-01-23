@@ -123,6 +123,8 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       var pos = workingEnvironment[sender.tab.id];
       if (snippetsList[pos].items.length > itemId) {
         console.dir(snippetsList[pos]);
+        // Update current working item
+        snippetsList[pos].workingItem = itemId;
         var x_url = snippetsList[pos].items[itemId].url;
         var xx_url = x_url.substr(0, x_url.lastIndexOf(":")) + "#L" + x_url.substr(x_url.lastIndexOf(":") + 1);
         console.log(xx_url);
