@@ -1,6 +1,29 @@
 /*globals jQuery, define, module, exports, require, window, document, postMessage */
 (function (jQuery) {
 	"use strict";
+// Notify that injected data
+console.log("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
+window.addEventListener("hashchange", function(){
+	console.log("HASH CHANGE : " + window.location.hash);
+}, false);
+
+window.addEventListener("loadend", function(){
+	console.log("loadend CHANGE : " + window.location.href);
+}, false);
+
+window.addEventListener("load", function(){
+	console.log("LOAD CHANGE : " + window.location.href);
+}, false);
+
+
+window.addEventListener("loadstart", function(){
+	console.log("LOAD START CHANGE : " + window.location.href);
+}, false);
+
+window.addEventListener("loadend", function(){
+	console.log("LOAD END CHANGE : " + window.location.href);
+}, false);
+
 
  function findById(id, subscription, callback) {
 	 var element =  document.getElementById(id);
@@ -115,19 +138,24 @@
 	 },
 	 snippetsList: null,
 	 current_index: 0,
-	 showNewItem: function(url, line, comment, isInit) {
+	 showNewItem: function(url, line, comment, isInit, skipSubsciption) {
 		 this.current_index++;
 
 		 var payload = url.length > 20 ? url.substr(url.length -20): url;
 		 this.snippetsList = findById("menu-snippets-list");
-		 this.snippetsList.innerHTML += '<li><a aria-label="'+url+'" id="snippetor-active-item-'+this.current_index+'">'+payload+'</a></li><li class="snippet-separator-arrow-right"></li>';
+		 this.snippetsList.innerHTML += '<li><a class="snippetor-navigation-item" aria-label="'+url+'" id="snippetor-active-item-'+this.current_index+'">'+payload+'</a></li><li class="snippet-separator-arrow-right"></li>';
 		 if (!isInit)
 		   snippetorExtensionApi.addNewItem(url, line, comment);
-		 var itemToHandle = findById('snippetor-active-item-'+this.current_index, 'click', function(e) {
-			 console.log("CLICKED ON CURRENT ELEMENT TO SHOW !!!");
-			 e.stopPropagation();
-			 snippetorExtensionApi.openSnippetItem(1);
-		 });
+		 if (!skipSubsciption) {
+			 var navigation = document.getElementsByClassName("snippetor-navigation-item");
+			 // replace on map function
+			 for (var v in navigation) {
+				 navigation[v].addEventListener('click', function(e) {
+					 e.stopPropagation();
+		  		 snippetorExtensionApi.openSnippetItem(1);
+				 });
+			 }
+		 }
 		 console.log("Show new item: " + url);
 	 },
 	 init: function() {
