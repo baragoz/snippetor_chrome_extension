@@ -8,7 +8,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (changeInfo.status !== 'loading') return;
 
   chrome.tabs.executeScript(tabId, {
-    code: 'var injected = window.octotreeInjected; window.octotreeInjected = true; console.log("INJECTING DATA '+ tabId + '"); injected;',
+    code: 'var injected = window.octotreeInjected; window.octotreeInjected = true; console.log("INJECTING DATA '+ tabId + '"); if (window.subscribeForTheLineDblClick) window.subscribeForTheLineDblClick(); injected;',
     runAt: 'document_start'
   }, function (res) {
     if (chrome.runtime.lastError || // don't continue if error (i.e. page isn't in permission list)

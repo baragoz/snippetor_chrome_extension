@@ -2,6 +2,7 @@
   position: absolute;
   background-color: grey;
   display: none;
+  z-index: 1111111;
 }
 
 #snipettor-bubble-dialog textarea {

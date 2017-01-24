@@ -1,6 +1,27 @@
 /*globals jQuery, define, module, exports, require, window, document, postMessage */
 (function (jQuery) {
 	"use strict";
+
+  var snippetorUiApi;
+  function subscribeForTheLineDblClick() {
+	  var lines = document.getElementsByClassName("blob-num js-line-number");
+		function snippetorSelectHandler(e) {
+			var line = this.attributes["data-line-number"].value;
+			console.log("CLICKED : " + line);
+			snippetorUiApi.showBubble(e, line);
+		}
+		console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
+		var updatedElementsCount = 0;
+		for (var idx =0; idx <lines.length; ++idx) {
+			if (!lines[idx].classList.contains("snipettor-event-observer")) {
+				++updatedElementsCount;
+				lines[idx].className += " snipettor-event-observer";
+			  lines[idx].addEventListener('dblclick', snippetorSelectHandler);
+			}
+		}
+		console.log("updatedElementsCount: " + updatedElementsCount);
+	} // subscribeForTheLineDblClick
+  window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
 // Notify that injected data
 console.log("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
 window.addEventListener("hashchange", function(){
@@ -12,6 +33,7 @@ window.addEventListener("loadend", function(){
 }, false);
 
 window.addEventListener("load", function(){
+	subscribeForTheLineDblClick();
 	console.log("LOAD CHANGE : " + window.location.href);
 }, false);
 
@@ -92,7 +114,7 @@ window.addEventListener("loadend", function(){
 			}
  };
 
- var snippetorUiApi = {
+ snippetorUiApi = {
 	 bubbleElement: null,
 	 url: null,
 	 //
@@ -124,7 +146,7 @@ window.addEventListener("loadend", function(){
 	 //
 	 // Show input bubble at UI position
 	 //
-	 showBubble: function(line_element, evt, line) {
+	 showBubble: function(evt, line) {
 		 var xxx = window.location.href;
 		 xxx = xxx.split("#")[0];
 		 this.currentItem = {url: xxx, line: line};
@@ -253,15 +275,7 @@ window.addEventListener("loadend", function(){
 				snippetorToggleAction.style.width = "42px";
 	});
 
-  // TODO: subscribe for a lines of code on URL change (with AJAX)
-  var lines = document.getElementsByClassName("blob-num js-line-number");
-	function snippetorSelectHandler(e) {
-		var line = this.attributes["data-line-number"].value;
-		console.log("CLICKED : " + line);
-		snippetorUiApi.showBubble(this, e, line);
-	}
-	for (var idx =0; idx <lines.length; ++idx) {
-		lines[idx].addEventListener('dblclick', snippetorSelectHandler);
-	}
+  // asdads ad
+	subscribeForTheLineDblClick();
 
 })($);
