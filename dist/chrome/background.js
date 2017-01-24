@@ -105,6 +105,8 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       workingEnvironment[sender.tab.id] = null;
     },
     addNewItem: function(payload) {
+      console.log("ADD NEW ITEM: ");
+      console.dir(payload);
        var pos = workingEnvironment[sender.tab.id];
        console.log("POSITION IS: " + pos);
        console.dir(payload);
@@ -119,14 +121,14 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
 
     },
     openItem: function(itemId) {
-      console.log(itemId);
+      console.log("openItem: " + itemId);
       var pos = workingEnvironment[sender.tab.id];
       if (snippetsList[pos].items.length > itemId) {
         console.dir(snippetsList[pos]);
         // Update current working item
         snippetsList[pos].workingItem = itemId;
         var x_url = snippetsList[pos].items[itemId].url;
-        var xx_url = x_url.substr(0, x_url.lastIndexOf(":")) + "#L" + x_url.substr(x_url.lastIndexOf(":") + 1);
+        var xx_url = x_url+ "#L" + snippetsList[pos].items[itemId].line;
         console.log(xx_url);
         chrome.tabs.update({'url': xx_url, active:true}, function(x) {
           console.dir(arguments);

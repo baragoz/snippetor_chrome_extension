@@ -41,7 +41,6 @@ window.addEventListener("loadend", function(){
 			extensionStorageId : null,
 			extensionWorkingItemId : null,
 			createSnippet: function(title, callback) {
-				console.log("createSnippet DDDDDDDDDDDDDDD");
 				chrome.runtime.sendMessage({type: "createSnippet", payload: {title: title}}, function(response) {
 					// get an id of the working snippet
 					snippetorExtensionApi.extensionStorageId = response.working;
@@ -60,7 +59,7 @@ window.addEventListener("loadend", function(){
 				});
 			},
 			openSnippetItem: function(id, callback) {
-				chrome.runtime.sendMessage({type: "openItem", payload: 1}, function(response) {
+				chrome.runtime.sendMessage({type: "openItem", payload: id}, function(response) {
 					console.log("Open snippet complete");
 					if (callback)
 					  callback(response);
@@ -110,7 +109,8 @@ window.addEventListener("loadend", function(){
 				 // read current value and reset input
 				 var r = findById("snipettor-bubble-dialog-textarea").value;
 				 findById("snipettor-bubble-dialog-textarea").value = "";
-				 snippetorUiApi.showNewItem(that.url, 10, r);
+				 console.log("SAVE BUBBLE !!!: " + that.currentItem.line)
+				 snippetorUiApi.showNewItem(that.currentItem.url, that.currentItem.line, r);
 				 that.bubbleElement.style.display = "none";
 			 });
 			 // Subscrbe for CANCEL button
@@ -127,8 +127,8 @@ window.addEventListener("loadend", function(){
 	 showBubble: function(line_element, evt, line) {
 		 var xxx = window.location.href;
 		 xxx = xxx.split("#")[0];
-		 this.url = xxx + ":" + line;
-		 console.log("SHOW BUBBLE !!!");
+		 this.currentItem = {url: xxx, line: line};
+		 console.log("SHOW BUBBLE !!!"+ this.currentItem.line);
 
 		 var bubbleElement = this._getBubbleUi();
 		 bubbleElement.style.top = (evt.pageY + 20) + "px";
@@ -143,17 +143,22 @@ window.addEventListener("loadend", function(){
 
 		 var payload = url.length > 20 ? url.substr(url.length -20): url;
 		 this.snippetsList = findById("menu-snippets-list");
-		 this.snippetsList.innerHTML += '<li><a class="snippetor-navigation-item" aria-label="'+url+'" id="snippetor-active-item-'+this.current_index+'">'+payload+'</a></li><li class="snippet-separator-arrow-right"></li>';
+		 this.snippetsList.innerHTML += '<li><a class="snippetor-navigation-item" aria-label="'+url+'" id="snippetor-active-item-'+this.current_index+'">'+payload+':'+line+'</a></li><li class="snippet-separator-arrow-right"></li>';
+		 // skip subscription on init
+		 console.log("ADD NEW ITEM: " + line);
 		 if (!isInit)
 		   snippetorExtensionApi.addNewItem(url, line, comment);
 		 if (!skipSubsciption) {
 			 var navigation = document.getElementsByClassName("snippetor-navigation-item");
 			 // replace on map function
-			 for (var v in navigation) {
-				 navigation[v].addEventListener('click', function(e) {
-					 e.stopPropagation();
-		  		 snippetorExtensionApi.openSnippetItem(1);
-				 });
+			 for (var v = 0; v < navigation.length; ++v) {
+				 navigation[v].addEventListener('click', (function(payload) {
+					 var pl = payload;
+					 return function(e) {
+					   e.stopPropagation();
+		  		   snippetorExtensionApi.openSnippetItem(pl);
+					 };
+				 })(v));
 			 }
 		 }
 		 console.log("Show new item: " + url);
@@ -164,7 +169,7 @@ window.addEventListener("loadend", function(){
 			   for (var x in snippetorExtensionApi.items) {
 				   console.log("POST INIT: []" + x);
   				 var tmp = snippetorExtensionApi.items[x];
-  				 snippetorUiApi.showNewItem(tmp.url, tmp.line, tmp.data, true);
+  				 snippetorUiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false);
 				 }
 				 snippetorUiApi.toggleSave(true);
 				 snippetorUiApi.toggleCreate(false);
@@ -251,8 +256,9 @@ window.addEventListener("loadend", function(){
   // TODO: subscribe for a lines of code on URL change (with AJAX)
   var lines = document.getElementsByClassName("blob-num js-line-number");
 	function snippetorSelectHandler(e) {
-		console.log("CLICKED");
-		snippetorUiApi.showBubble(this, e, this.attributes["data-line-number"].value);
+		var line = this.attributes["data-line-number"].value;
+		console.log("CLICKED : " + line);
+		snippetorUiApi.showBubble(this, e, line);
 	}
 	for (var idx =0; idx <lines.length; ++idx) {
 		lines[idx].addEventListener('dblclick', snippetorSelectHandler);
