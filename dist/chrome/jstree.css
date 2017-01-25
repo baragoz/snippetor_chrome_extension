@@ -66,6 +66,31 @@ ul#menu-dddd .active {
     background-color: #4CAF50;
 }
 
+ul#snippetor-vertical-menu {
+list-style-type: none;
+margin: 0;
+padding: 0;
+width: 200px;
+background-color: #f1f1f1;
+position: fixed;
+top: 49px;
+left:0px;
+}
+
+ul#snippetor-vertical-menu li a {
+display: block;
+color: #000;
+padding: 8px 16px;
+text-decoration: none;
+}
+
+/* Change the link color on hover */
+ul#snippetor-vertical-menu li a:hover {
+background-color: #555;
+color: white;
+}
+
+
 /* jsTree default theme */
 .jstree-node,
 .jstree-children,

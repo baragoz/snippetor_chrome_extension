@@ -90,6 +90,9 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
         });
       }
     },
+    //
+    // Save current snippet request
+    //
     saveSnippet: function gotReportFromTheTab(data) {
       var snipettorURL =  "http://localhost:8000";
       var pos = workingEnvironment[sender.tab.id];
@@ -101,6 +104,9 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
         sendRes({status:"saving"});
       }
     },
+    //
+    // Get initial items for a current tab
+    //
     initialItems: function(payload) {
       console.log("GET INITIAL ITEMS: " + sender.tab.id);
       // has opened snippet

@@ -82,6 +82,7 @@ window.addEventListener("loadend", function(){
 	    items: [],
 			extensionStorageId : null,
 			extensionWorkingItemId : null,
+			state: "idle",
 			createSnippet: function(title, callback) {
 				chrome.runtime.sendMessage({type: "createSnippet", payload: {title: title}}, function(response) {
 					// get an id of the working snippet
@@ -128,6 +129,7 @@ window.addEventListener("loadend", function(){
 					snippetorExtensionApi.extensionStorageId = response.working;
 					snippetorExtensionApi.items = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].items: [];
           snippetorExtensionApi.extensionWorkingItemId = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem: null;
+					snippetorExtensionApi.snippetsList = response.snippets;
 					if (callback)
 					  callback(response);
 				});
@@ -167,6 +169,9 @@ window.addEventListener("loadend", function(){
 	 // Show input bubble at UI position
 	 //
 	 showBubble: function(evt, line) {
+		 // Do nothing if snippet was not named
+		 if (snippetorExtensionApi.extensionStorageId == undefined || snippetorExtensionApi.extensionStorageId == null)
+		   return;
 		 var xxx = window.location.href;
 		 xxx = xxx.split("#")[0];
 		 this.currentItem = {url: xxx, line: line};
@@ -207,7 +212,7 @@ window.addEventListener("loadend", function(){
 	 },
 	 init: function() {
 		 snippetorExtensionApi.init(function() {
-       if (snippetorExtensionApi.extensionStorageId != null) {
+       if (snippetorExtensionApi.extensionStorageId != null && snippetorExtensionApi.extensionStorageId != undefined) {
 			   for (var x in snippetorExtensionApi.items) {
 				   console.log("POST INIT: []" + x);
   				 var tmp = snippetorExtensionApi.items[x];
@@ -215,23 +220,62 @@ window.addEventListener("loadend", function(){
 				 }
 				 snippetorUiApi.toggleSave(true);
 				 snippetorUiApi.toggleCreate(false);
-
 			 }
 			 else {
 				 snippetorUiApi.toggleSave(false);
-				 snippetorUiApi.toggleCreate(true);
+				 snippetorUiApi.toggleCreate(false);
 			 }
+
+			 snippetorUiApi.toggleVMenu(false);
+       //
+			 // Work-around for a S-menu toggle: we need to toggle vertical when user do nothing with snippet
+			 // and horizontal otherwise.
+			 // So we need to minimize menu on start in case which described above
+			 //
+		   if (snippetorExtensionApi.extensionStorageId == null && snippetorExtensionApi.extensionStorageId == undefined) {
+		 	  snippetorToggleAction.style.width = "42px";
+		 	  snippetorToggleAction.style.height = "49px";
+		 	}
+
+				 var vertMenu = findById("snippetor-vertical-menu");
+				 if (vertMenu) {
+					 for (var t in snippetorExtensionApi.snippetsList) {
+						 var snippet = snippetorExtensionApi.snippetsList[t];
+						 if (snippet) {
+							 vertMenu.innerHTML += '<li><a href="#">'+(snippet.title || 'no title')+'</a></li>';
+						 }
+					 }
+           findById("snipettor-create-item", "click", function(e) {
+						 snippetorUiApi.toggleCreate(true);
+						 snippetorUiApi.toggleVMenu(false);
+						 // trigger toggle
+						 findById("menu-dddd").dispatchEvent(new Event("click"));
+					 });
+				 } // vertical menu
 		 });
+	 },
+	 toggleVMenu: function(flag) {
+		 var vertMenu = findById("snippetor-vertical-menu");
+		 if (flag == undefined) {
+			 flag = vertMenu.style.display == "none";
+		 }
+		 vertMenu.style.display = flag ? "block" : "none";
 	 },
 	 toggleSave: function(flag) {
 		 var saveIt = findById("snippetor-save-action");
 		 saveIt.style.display = flag ? "block" : "none";
+     // working state
+		 if (flag)
+		 snippetorExtensionApi.state = "edit";
 	 },
 	 toggleCreate: function(flag) {
 		 var closeIt = findById("snippetor-create-action");
 		 closeIt.style.display = flag ? "block" : "none";
 		 var inputWrapper = findById("snippetor-input-action-wrapper");
 		 inputWrapper.style.display = flag ? "block" : "none";
+     // waiting for craete
+		 if (flag)
+		 snippetorExtensionApi.state = "create";
 	 }
  };
 
@@ -249,6 +293,11 @@ window.addEventListener("loadend", function(){
 <br>\
 <button id="snipettor-bubble-dialog-save">Save</button>\
 <button id="snipettor-bubble-dialog-cancel">Cancel</button></div>';
+
+  document.body.innerHTML += '\
+<ul id="snippetor-vertical-menu">\
+	<li><a id="snipettor-create-item" href="#">Create</a></li>\
+</ul>';
 
  snippetorUiApi.init();
 
@@ -287,12 +336,18 @@ window.addEventListener("loadend", function(){
 
 	// Show/hide top menu
   var snippetorToggleAction = findById("menu-dddd", "click", function(e) {
+		if (snippetorExtensionApi.state == "idle") {
+      snippetorUiApi.toggleVMenu();
+		}
+		else {
+			  snippetorUiApi.toggleVMenu(false);
 				//var rrr = document.getElementById("menu-dddd");
 				snippetorToggleAction.style.height = "49px";
 				if (snippetorToggleAction.style.width == "42px")
 				  snippetorToggleAction.style.width = "100%";
 				else
 				snippetorToggleAction.style.width = "42px";
+		}
 	});
 
   // asdads ad
