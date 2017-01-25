@@ -245,7 +245,7 @@ window.addEventListener("loadend", function(){
 					 for (var t in snippetorExtensionApi.snippetsList) {
 						 var snippet = snippetorExtensionApi.snippetsList[t];
 						 if (snippet) {
-							 vertMenu.innerHTML += '<li><a href="#">'+(snippet.title || 'no title')+'</a></li>';
+							 vertMenu.innerHTML += '<li><a href="#" snippet_item="'+t+'" class="snipettor-select-menu-item">'+(snippet.title || 'no title')+'</a></li>';
 						 }
 					 }
            findById("snipettor-create-item", "click", function(e) {
@@ -254,8 +254,34 @@ window.addEventListener("loadend", function(){
 						 // hide top line
 						 findById("menu-dddd").dispatchEvent(new Event("click"));
 					 });
+
+					 var snippetDrafts = document.getElementsByClassName("snipettor-select-menu-item");
+					 for (var x=0; x<snippetDrafts.length; ++x) {
+						 snippetDrafts[x].addEventListener("click", function(e) {
+							 var index = parseInt(this.attributes["snippet_item"].value);
+							 console.log("ITEM IS:" + index);
+							 snippetorUiApi.openSnippet(index);
+						 });
+					 }
 				 } // vertical menu
 		 });
+	 },
+	 openSnippet: function(idx) {
+		 // open top menu on save mode
+		 snippetorUiApi.toggleSave(true);
+		 snippetorUiApi.toggleCreate(false);
+		 snippetorUiApi.toggleVMenu(false);
+
+     snippetorExtensionApi.items = snippetorExtensionApi.snippetsList[idx].items;
+		 snippetorExtensionApi.extensionStorageId = idx;
+		 for (var x in snippetorExtensionApi.items) {
+			 console.log("POST INIT: []" + x);
+			 var tmp = snippetorExtensionApi.items[x];
+			 snippetorUiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false);
+		 }
+
+		 // hide top line
+		 findById("menu-dddd").dispatchEvent(new Event("click"));
 	 },
 	 closeCurrentSnippet: function() {
 		 // hide top line
