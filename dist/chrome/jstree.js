@@ -260,9 +260,15 @@ window.addEventListener("loadend", function(){
 	 closeCurrentSnippet: function() {
 		 // hide top line
 		 findById("menu-dddd").dispatchEvent(new Event("click"));
-		 //
+
+		 // hide all menus
+		 snippetorUiApi.toggleSave(false);
 		 snippetorUiApi.toggleCreate(false);
 		 snippetorUiApi.toggleVMenu(false);
+
+		 this.snippetsList = findById("menu-snippets-list");
+		 this.snippetsList.innerHTML = "";
+
 		 snippetorExtensionApi.closeCurrentSnippet();
 	 },
 	 toggleVMenu: function(flag) {
@@ -286,7 +292,12 @@ window.addEventListener("loadend", function(){
 		 inputWrapper.style.display = flag ? "block" : "none";
      // waiting for craete
 		 if (flag)
-		 snippetorExtensionApi.state = "create";
+		   snippetorExtensionApi.state = "create";
+		 else {
+			 console.log(inputWrapper);
+		   inputWrapper.value = "";
+		 }
+
 	 }
  };
 
