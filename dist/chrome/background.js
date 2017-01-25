@@ -118,6 +118,10 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       console.log("GET INITIAL ITEMS EMPTY");
       sendRes({snippets: snippetsList});
     },
+    openSnippet: function(index) {
+      // TODO: think about synchronization of this list
+      workingEnvironment[sender.tab.id] = index;
+    },
     createSnippet: function(payload) {
       console.log("CREATE SNIPPET !Q!!!! " + snippetsList.length );
       // init snippet by id

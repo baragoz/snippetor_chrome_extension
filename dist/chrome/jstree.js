@@ -94,6 +94,12 @@ window.addEventListener("loadend", function(){
 					snippetorUiApi.toggleCreate(false);
 				});
 			},
+			openSnippet: function(idx) {
+				chrome.runtime.sendMessage({type: "openSnippet", payload: idx}, function(response) {
+				});
+				snippetorExtensionApi.items = snippetorExtensionApi.snippetsList[idx].items;
+				snippetorExtensionApi.extensionStorageId = idx;
+			},
 			openSnippetItem: function(id, callback) {
 				chrome.runtime.sendMessage({type: "openItem", payload: id}, function(response) {
 					console.log("Open snippet complete");
@@ -272,8 +278,8 @@ window.addEventListener("loadend", function(){
 		 snippetorUiApi.toggleCreate(false);
 		 snippetorUiApi.toggleVMenu(false);
 
-     snippetorExtensionApi.items = snippetorExtensionApi.snippetsList[idx].items;
-		 snippetorExtensionApi.extensionStorageId = idx;
+
+     snippetorExtensionApi.openSnippet(idx);
 		 for (var x in snippetorExtensionApi.items) {
 			 console.log("POST INIT: []" + x);
 			 var tmp = snippetorExtensionApi.items[x];
