@@ -94,13 +94,6 @@ window.addEventListener("loadend", function(){
 					snippetorUiApi.toggleCreate(false);
 				});
 			},
-			closeSnippet: function(callback) {
-				chrome.runtime.sendMessage({type: "closeSnippet"}, function(response) {
-					console.log("Snippet closed");
-					if (callback)
-					  callback(response);
-				});
-			},
 			openSnippetItem: function(id, callback) {
 				chrome.runtime.sendMessage({type: "openItem", payload: id}, function(response) {
 					console.log("Open snippet complete");
@@ -121,6 +114,16 @@ window.addEventListener("loadend", function(){
 					if (callback)
 					  callback(response);
 				});
+			},
+			closeCurrentSnippet: function() {
+				chrome.runtime.sendMessage({type: "closeCurrentSnippet", payload: snippetorExtensionApi.extensionStorageId}, function(response) {
+					console.log("snippet has been unsubscribed");
+				});
+				// reset state to the IDLE
+				snippetorExtensionApi.extensionStorageId = null;
+				snippetorExtensionApi.items = [];
+				snippetorExtensionApi.extensionWorkingItemId = undefined;
+				snippetorExtensionApi.state = "idle";
 			},
 			init: function(callback) {
 				chrome.runtime.sendMessage({type: "initialItems", payload: {}}, function(response) {
@@ -248,11 +251,19 @@ window.addEventListener("loadend", function(){
            findById("snipettor-create-item", "click", function(e) {
 						 snippetorUiApi.toggleCreate(true);
 						 snippetorUiApi.toggleVMenu(false);
-						 // trigger toggle
+						 // hide top line
 						 findById("menu-dddd").dispatchEvent(new Event("click"));
 					 });
 				 } // vertical menu
 		 });
+	 },
+	 closeCurrentSnippet: function() {
+		 // hide top line
+		 findById("menu-dddd").dispatchEvent(new Event("click"));
+		 //
+		 snippetorUiApi.toggleCreate(false);
+		 snippetorUiApi.toggleVMenu(false);
+		 snippetorExtensionApi.closeCurrentSnippet();
 	 },
 	 toggleVMenu: function(flag) {
 		 var vertMenu = findById("snippetor-vertical-menu");
@@ -303,9 +314,8 @@ window.addEventListener("loadend", function(){
 
   // Close icon
 	var snippetorCloseAction = findById("snipettor-close-action", "click", function(e) {
-			  e.stopPropagation();
-				snippetorToggleAction.style.height = "49px";
-				snippetorToggleAction.style.width = "42px";
+  	  e.stopPropagation();
+      snippetorUiApi.closeCurrentSnippet();
   }); // On click handler
 
   var saveAction = findById("snippetor-save-action", "click", function(e) {

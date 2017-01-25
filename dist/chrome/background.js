@@ -125,7 +125,7 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       snippetsList.push({title: payload.title, items:[]});
       sendRes({working: workingEnvironment[sender.tab.id]});
     },
-    closeSnippet: function(data) {
+    closeCurrentSnippet: function(data) {
       workingEnvironment[sender.tab.id] = null;
     },
     addNewItem: function(payload) {
