@@ -11,6 +11,8 @@
   "permissions": [
     "https://github.com/*",
     "https://gitlab.com/*",
+    "http://localhost:3000/*",
+    "http://localhost:8000/*",
     "storage"
   ],
   "optional_permissions": [

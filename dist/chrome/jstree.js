@@ -1,6 +1,26 @@
 /*globals jQuery, define, module, exports, require, window, document, postMessage */
 (function (jQuery) {
 	"use strict";
+$(document).ready(function() {
+
+  // Snippetor site communication
+  window.addEventListener("onSaveSnippet", function(e) {
+		// Propagate snippet unique ID
+		chrome.runtime.sendMessage({type: "onSaveSnippetDraft", payload: true}, function(response) {
+		});
+	});
+
+	window.addEventListener("onRemoveSnippet", function(e) {
+		chrome.runtime.sendMessage({type: "onRemoveSnippetDraft", payload: true}, function(response) {
+		});
+	});
+
+	window.addEventListener("onOpenSnippet", function(e) {
+		chrome.runtime.sendMessage({type: "onOpenSnippet", payload: e.details.payload}, function(response) {
+		});
+	});
+
+
 
   var snippetorUiApi;
   function subscribeForTheLineDblClick() {
@@ -277,5 +297,7 @@ window.addEventListener("loadend", function(){
 
   // asdads ad
 	subscribeForTheLineDblClick();
+
+}); // document ready
 
 })($);
