@@ -3,6 +3,8 @@
 	"use strict";
 $(document).ready(function() {
 
+var isSnippetor = (window.location.href.indexOf("http://localhost") == 0);
+
 window.addEventListener("onSnippetChange", function(evt) {
 	var payload = evt.detail;
 	if (payload.action == "save") {
@@ -137,6 +139,8 @@ window.addEventListener("onSnipettorAction", function(evt) {
 			},
 			init: function(callback) {
 				chrome.runtime.sendMessage({type: "initialItems", payload: {}}, function(response) {
+					console.log("IIIIIIIIIIIIIIIII");
+					console.dir(response);
 					snippetorExtensionApi.extensionStorageId = response.working;
 					snippetorExtensionApi.items = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].items: [];
           snippetorExtensionApi.extensionWorkingItemId = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem: null;
@@ -241,13 +245,17 @@ window.addEventListener("onSnipettorAction", function(evt) {
 			 // So we need to minimize menu on start in case which described above
 			 //
 		   if (snippetorExtensionApi.extensionStorageId == null && snippetorExtensionApi.extensionStorageId == undefined) {
+				 if (!isSnippetor) {
 		 	  snippetorToggleAction.style.width = "42px";
 		 	  snippetorToggleAction.style.height = "49px";
+			}
 		 	}
 			snippetorUiApi.refreshVertMenu();
 		 });
 	 },
 	 refreshVertMenu: function() {
+		 if (isSnippetor)
+		   return;
 		 var vertMenu = findById("snippetor-vertical-menu");
 		 if (vertMenu) {
 			 // Empty previous value
@@ -280,6 +288,8 @@ window.addEventListener("onSnipettorAction", function(evt) {
 	 // Re-draw and subscribe on UI list again
 	 //
 	 refreshItemsUiList: function() {
+		 if (isSnippetor)
+			 return;
 		 var snippetsList = findById("menu-snippets-list");
 		 snippetsList.innerHTML = '<li class="snippet-separator-arrow-right"></li>';
 		 if (snippetorExtensionApi.extensionStorageId != null && snippetorExtensionApi.extensionStorageId != undefined) {
@@ -319,6 +329,8 @@ window.addEventListener("onSnipettorAction", function(evt) {
 		 snippetorExtensionApi.closeCurrentSnippet();
 	 },
 	 toggleVMenu: function(flag) {
+		 if (isSnippetor)
+			 return;
 		 var vertMenu = findById("snippetor-vertical-menu");
 		 if (flag == undefined) {
 			 flag = vertMenu.style.display == "none";
@@ -326,6 +338,8 @@ window.addEventListener("onSnipettorAction", function(evt) {
 		 vertMenu.style.display = flag ? "block" : "none";
 	 },
 	 toggleSave: function(flag) {
+		 if (isSnippetor)
+			 return;
 		 var saveIt = findById("snippetor-save-action");
 		 saveIt.style.display = flag ? "block" : "none";
      // working state
@@ -333,6 +347,8 @@ window.addEventListener("onSnipettorAction", function(evt) {
 		 snippetorExtensionApi.state = "edit";
 	 },
 	 toggleCreate: function(flag) {
+		 if (isSnippetor)
+			 return;
 		 var closeIt = findById("snippetor-create-action");
 		 closeIt.style.display = flag ? "block" : "none";
 		 var inputWrapper = findById("snippetor-input-action-wrapper");
@@ -408,6 +424,8 @@ window.addEventListener("onSnipettorAction", function(evt) {
 
  };
 
+ if (!isSnippetor) {
+
   document.body.innerHTML += '\
 <ul id="menu-dddd">\
   <li><a id="snippetor-toggle-menu" class="active">S</a></li>\
@@ -426,8 +444,10 @@ window.addEventListener("onSnipettorAction", function(evt) {
   document.body.innerHTML += '\
 <ul id="snippetor-vertical-menu">\
 </ul>';
-
+}
  snippetorUiApi.init();
+ if (isSnippetor)
+   return;
 
   // Close icon
 	var snippetorCloseAction = findById("snipettor-close-action", "click", function(e) {
@@ -479,6 +499,7 @@ window.addEventListener("onSnipettorAction", function(evt) {
 
   // asdads ad
 	subscribeForTheLineDblClick();
+
 
 }); // document ready
 
