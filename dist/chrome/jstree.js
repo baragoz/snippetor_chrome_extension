@@ -36,6 +36,16 @@ window.addEventListener("onSnippetItemChange", function(evt) {
 });
 
 
+window.addEventListener("onSnipettorAction", function(evt) {
+	console.log("SAVED");
+	var payload = evt.detail;
+	console.dir(payload);
+  if (payload.action == "saved-draft") {
+		chrome.runtime.sendMessage({type: "onSaveSnippetDraft", payload: {uid: payload.payload.uid} }, function(response) {
+		});
+	}
+});
+
 
   var snippetorUiApi;
   function subscribeForTheLineDblClick() {
@@ -344,6 +354,7 @@ window.addEventListener("onSnippetItemChange", function(evt) {
 	 // Close current snippet on save
 	 //
 	 onSaveSnippet: function(payload) {
+		 console.log("SAVE SNIPPET HANDLE WIT CLOSE ");
 		 if (payload.working == snippetorExtensionApi.extensionStorageId) {
 			 this.closeCurrentSnippet();
 		 }

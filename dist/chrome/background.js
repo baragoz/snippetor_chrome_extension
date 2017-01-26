@@ -77,6 +77,10 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
     onSaveSnippetDraft: function(success) {
       console.log("SNIPPET SAVED");
       sendRes({notfied: true});
+console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
+      this._broadcastTabs(-1, "onSnippetChange", {action: "save", working: workingEnvironment[sender.tab.id]});
+      // TODO: action depends on preferences; we could add UID only on save
+      snippetsList[workingEnvironment[sender.tab.id]] = null;
       return true;
     },
     onRemoveSnippetDraft: function(payload) {
@@ -98,9 +102,11 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       var pos = workingEnvironment[sender.tab.id];
       if (pos != undefined && pos >= 0) {
         var encodedString = Base64.encode(JSON.stringify(snippetsList[pos]));
-        chrome.tabs.update({'url': snipettorURL + "?save="+encodedString, active:true}, function(x) {
-          console.log("working on saving");
-
+        chrome.tabs.create({'url': snipettorURL + "?save="+encodedString, active:true}, function(tab) {
+          console.log("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS");
+          console.dir(arguments);
+          // Assign opened tab as snippet handler
+          workingEnvironment[tab.id] = pos;
         });
         sendRes({status:"saving"});
       }
@@ -109,8 +115,6 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
     // Get initial items for a current tab
     //
     initialItems: function(payload) {
-      chrome.runtime.sendMessage({type: "onSaveSnippetDraft", payload: true}, function(response) {
-      });
       console.log("GET INITIAL ITEMS: " + sender.tab.id);
       // has opened snippet
       console.dir(workingEnvironment);
