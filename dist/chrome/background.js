@@ -100,6 +100,7 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
         var encodedString = Base64.encode(JSON.stringify(snippetsList[pos]));
         chrome.tabs.update({'url': snipettorURL + "?save="+encodedString, active:true}, function(x) {
           console.log("working on saving");
+
         });
         sendRes({status:"saving"});
       }
@@ -108,6 +109,8 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
     // Get initial items for a current tab
     //
     initialItems: function(payload) {
+      chrome.runtime.sendMessage({type: "onSaveSnippetDraft", payload: true}, function(response) {
+      });
       console.log("GET INITIAL ITEMS: " + sender.tab.id);
       // has opened snippet
       console.dir(workingEnvironment);
@@ -128,6 +131,9 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       workingEnvironment[sender.tab.id] = snippetsList.length;
       snippetsList.push({title: payload.title, items:[]});
       sendRes({working: workingEnvironment[sender.tab.id]});
+
+      // -1 - Broadcast for all tabs
+      this._broadcastTabs(-1, "onSnippetChange", {action: "create", snippet: snippetsList[snippetsList.length-1], working: snippetsList.length-1});
     },
     closeCurrentSnippet: function(data) {
       workingEnvironment[sender.tab.id] = null;
@@ -142,11 +148,25 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
          console.log("ADD PAYLOAD");
          snippetsList[pos].items.push(payload);
          sendRes(true);
+
+         // Send item added event for all tabs
+         this._broadcastTabs(sender.tab.id, "onSnippetItemChange", {action: "add", item: payload, working:pos, index: snippetsList[pos].items.length-1});
          return true;
        }
       sendRes(false);
        return false;
 
+    },
+    _broadcastTabs: function(senderId, action, payload) {
+      var code = "window.dispatchEvent(new CustomEvent(\"" + action + "\", {detail: " +JSON.stringify(payload)+ "}));";
+      console.log("dispatch: " + code);
+      for (var x in cachedTabs) {
+        var tabId = parseInt(x);
+        if (tabId != senderId)
+          chrome.tabs.executeScript(tabId, {
+            code:code
+          }, function(result) {});
+      }
     },
     openItem: function(itemId) {
       console.log("openItem: " + itemId);

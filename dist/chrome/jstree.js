@@ -3,22 +3,37 @@
 	"use strict";
 $(document).ready(function() {
 
-  // Snippetor site communication
-  window.addEventListener("onSaveSnippet", function(e) {
-		// Propagate snippet unique ID
-		chrome.runtime.sendMessage({type: "onSaveSnippetDraft", payload: true}, function(response) {
-		});
-	});
+window.addEventListener("onSnippetChange", function(evt) {
+	var payload = evt.detail;
+	if (payload.action == "save") {
+		snippetorUiApi.onSaveSnippet(payload);
+	}
+	else if (payload.action == "create") {
+			snippetorUiApi.onCreateSnippet(payload);
+	}
+	else if (payload.action == "open") {
+		 snippetorUiApi.onOpenSnippet(payload);
+ }
+ else {
+	 alert("Unknow snippet action: " + payload.action);
+ }
+});
 
-	window.addEventListener("onRemoveSnippet", function(e) {
-		chrome.runtime.sendMessage({type: "onRemoveSnippetDraft", payload: true}, function(response) {
-		});
-	});
-
-	window.addEventListener("onOpenSnippet", function(e) {
-		chrome.runtime.sendMessage({type: "onOpenSnippet", payload: e.details.payload}, function(response) {
-		});
-	});
+window.addEventListener("onSnippetItemChange", function(evt) {
+	var payload = evt.detail;
+	if (payload.action == "add") {
+		snippetorUiApi.onAddItem(payload);
+	}
+	else if (payload.action == "remove") {
+			snippetorUiApi.onRemoveItem(payload);
+	}
+	else if (payload.action == "change") {
+		 snippetorUiApi.onChangeItem(payload);
+ }
+ else {
+	 alert("Unknow snippet action: " + payload.action);
+ }
+});
 
 
 
@@ -42,30 +57,9 @@ $(document).ready(function() {
 		console.log("updatedElementsCount: " + updatedElementsCount);
 	} // subscribeForTheLineDblClick
   window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
-// Notify that injected data
-console.log("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
-window.addEventListener("hashchange", function(){
-	console.log("HASH CHANGE : " + window.location.hash);
-}, false);
-
-window.addEventListener("loadend", function(){
-	console.log("loadend CHANGE : " + window.location.href);
-}, false);
-
-window.addEventListener("load", function(){
-	subscribeForTheLineDblClick();
-	console.log("LOAD CHANGE : " + window.location.href);
-}, false);
-
-
-window.addEventListener("loadstart", function(){
-	console.log("LOAD START CHANGE : " + window.location.href);
-}, false);
-
-window.addEventListener("loadend", function(){
-	console.log("LOAD END CHANGE : " + window.location.href);
-}, false);
-
+  window.addEventListener("load", function(){
+  	subscribeForTheLineDblClick();
+  }, false);
 
  function findById(id, subscription, callback) {
 	 var element =  document.getElementById(id);
@@ -133,8 +127,6 @@ window.addEventListener("loadend", function(){
 			},
 			init: function(callback) {
 				chrome.runtime.sendMessage({type: "initialItems", payload: {}}, function(response) {
-					console.log("got initial state for the tab");
-					console.dir(response);
 					snippetorExtensionApi.extensionStorageId = response.working;
 					snippetorExtensionApi.items = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].items: [];
           snippetorExtensionApi.extensionWorkingItemId = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem: null;
@@ -222,13 +214,10 @@ window.addEventListener("loadend", function(){
 	 init: function() {
 		 snippetorExtensionApi.init(function() {
        if (snippetorExtensionApi.extensionStorageId != null && snippetorExtensionApi.extensionStorageId != undefined) {
-			   for (var x in snippetorExtensionApi.items) {
-				   console.log("POST INIT: []" + x);
-  				 var tmp = snippetorExtensionApi.items[x];
-  				 snippetorUiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false);
-				 }
+         snippetorUiApi.refreshItemsUiList();
 				 snippetorUiApi.toggleSave(true);
 				 snippetorUiApi.toggleCreate(false);
+
 			 }
 			 else {
 				 snippetorUiApi.toggleSave(false);
@@ -245,32 +234,51 @@ window.addEventListener("loadend", function(){
 		 	  snippetorToggleAction.style.width = "42px";
 		 	  snippetorToggleAction.style.height = "49px";
 		 	}
-
-				 var vertMenu = findById("snippetor-vertical-menu");
-				 if (vertMenu) {
-					 for (var t in snippetorExtensionApi.snippetsList) {
-						 var snippet = snippetorExtensionApi.snippetsList[t];
-						 if (snippet) {
-							 vertMenu.innerHTML += '<li><a href="#" snippet_item="'+t+'" class="snipettor-select-menu-item">'+(snippet.title || 'no title')+'</a></li>';
-						 }
-					 }
-           findById("snipettor-create-item", "click", function(e) {
-						 snippetorUiApi.toggleCreate(true);
-						 snippetorUiApi.toggleVMenu(false);
-						 // hide top line
-						 findById("menu-dddd").dispatchEvent(new Event("click"));
-					 });
-
-					 var snippetDrafts = document.getElementsByClassName("snipettor-select-menu-item");
-					 for (var x=0; x<snippetDrafts.length; ++x) {
-						 snippetDrafts[x].addEventListener("click", function(e) {
-							 var index = parseInt(this.attributes["snippet_item"].value);
-							 console.log("ITEM IS:" + index);
-							 snippetorUiApi.openSnippet(index);
-						 });
-					 }
-				 } // vertical menu
+			snippetorUiApi.refreshVertMenu();
 		 });
+	 },
+	 refreshVertMenu: function() {
+		 var vertMenu = findById("snippetor-vertical-menu");
+		 if (vertMenu) {
+			 // Empty previous value
+		 	 vertMenu.innerHTML = '<li><a id="snipettor-create-item" href="#">Create</a></li>';
+
+			 for (var t in snippetorExtensionApi.snippetsList) {
+				 var snippet = snippetorExtensionApi.snippetsList[t];
+				 if (snippet) {
+					 vertMenu.innerHTML += '<li><a href="#" snippet_item="'+t+'" class="snipettor-select-menu-item">'+(snippet.title || 'no title')+'</a></li>';
+				 }
+			 }
+				findById("snipettor-create-item", "click", function(e) {
+				 snippetorUiApi.toggleCreate(true);
+				 snippetorUiApi.toggleVMenu(false);
+				 // hide top line
+				 findById("menu-dddd").dispatchEvent(new Event("click"));
+			 });
+
+			 var snippetDrafts = document.getElementsByClassName("snipettor-select-menu-item");
+			 for (var x=0; x<snippetDrafts.length; ++x) {
+				 snippetDrafts[x].addEventListener("click", function(e) {
+					 var index = parseInt(this.attributes["snippet_item"].value);
+					 console.log("ITEM IS:" + index);
+					 snippetorUiApi.openSnippet(index);
+				 });
+			 }
+		 } // vertical menu
+	 },
+	 //
+	 // Re-draw and subscribe on UI list again
+	 //
+	 refreshItemsUiList: function() {
+		 var snippetsList = findById("menu-snippets-list");
+		 snippetsList.innerHTML = '<li class="snippet-separator-arrow-right"></li>';
+		 if (snippetorExtensionApi.extensionStorageId != null && snippetorExtensionApi.extensionStorageId != undefined) {
+		   for (var x in snippetorExtensionApi.items) {
+			   console.log("POST INIT: []" + x);
+  			 var tmp = snippetorExtensionApi.items[x];
+	  		 snippetorUiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false);
+		   }
+     }
 	 },
 	 openSnippet: function(idx) {
 		 // open top menu on save mode
@@ -280,11 +288,8 @@ window.addEventListener("loadend", function(){
 
 
      snippetorExtensionApi.openSnippet(idx);
-		 for (var x in snippetorExtensionApi.items) {
-			 console.log("POST INIT: []" + x);
-			 var tmp = snippetorExtensionApi.items[x];
-			 snippetorUiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false);
-		 }
+     // refresh snippets on open
+		 snippetorUiApi.refreshItemsUiList();
 
 		 // hide top line
 		 findById("menu-dddd").dispatchEvent(new Event("click"));
@@ -329,8 +334,67 @@ window.addEventListener("loadend", function(){
 			 console.log(inputWrapper);
 		   inputWrapper.value = "";
 		 }
+	 },
+	 ///////////////////////////////////////////////
+	 //
+	 // Snippet list change observer
+	 //
+	 ///////////////////////////////////////////////
+	 //
+	 // Close current snippet on save
+	 //
+	 onSaveSnippet: function(payload) {
+		 if (payload.working == snippetorExtensionApi.extensionStorageId) {
+			 this.closeCurrentSnippet();
+		 }
+		 // Remove snippet from the menu list, because it is not draft anymore
+		 snippetorExtensionApi.snippetsList[payload.working] = null;
+		 this.refreshVertMenu();
+
+	 },
+	 //
+	 // Add snippet to the list of snippets on create
+	 //
+	 onCreateSnippet: function(payload) {
+		 // refresh the list of snippets in the menu
+  	 snippetorExtensionApi.snippetsList[payload.working] = payload.snippet;
+		 this.refreshVertMenu();
+	 },
+	 onOpenSnippet: function(payload) {
+		 // refresh the list of snippets in the menu
+		 // TODO: split draft snippets and opened snippets
+		 if (payload.working != snippetorExtensionApi.extensionStorageId) {
+			 snippetorExtensionApi.snippetsList[payload.working] = payload.snippet;
+			 this.refreshVertMenu();
+		 }
+	 },
+	 ///////////////////////////////////////////////
+	 //
+	 // Handle working snippet changes
+	 //
+	 ///////////////////////////////////////////////
+	 onAddItem: function(payload) {
+		 snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.index, 0, payload.item);
+		 snippetorExtensionApi.items.splice(payload.index, 0, payload.item);
+		 // update snippet item UI if it was current item
+		 if (payload.working == snippetorExtensionApi.extensionStorageId) {
+			 // add to the end of the existing list
+			 if (payload.index == snippetorExtensionApi.snippetsList[payload.working].items.length-1) {
+				 this.showNewItem(payload.item.url, payload.item.line, payload.item.comment, true, false);
+			 }
+			 else {
+				 // inser into the middle therefore we need to refresh list
+				 snippetorUiApi.refreshItemsUiList();
+			 }
+		 }
+	 },
+	 onRemoveItem: function(payload) {
+
+	 },
+	 onChangeImem: function(payload) {
 
 	 }
+
  };
 
   document.body.innerHTML += '\
@@ -350,7 +414,6 @@ window.addEventListener("loadend", function(){
 
   document.body.innerHTML += '\
 <ul id="snippetor-vertical-menu">\
-	<li><a id="snipettor-create-item" href="#">Create</a></li>\
 </ul>';
 
  snippetorUiApi.init();

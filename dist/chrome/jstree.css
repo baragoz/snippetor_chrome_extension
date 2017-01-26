@@ -75,6 +75,7 @@ background-color: #f1f1f1;
 position: fixed;
 top: 49px;
 left:0px;
+z-index:11111111;
 }
 
 ul#snippetor-vertical-menu li a {
