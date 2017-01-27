@@ -46,6 +46,10 @@ window.addEventListener("onSnipettorAction", function(evt) {
 		chrome.runtime.sendMessage({type: "onSaveSnippetDraft", payload: {uid: payload.payload.uid} }, function(response) {
 		});
 	}
+       else if (payload.action == "open-snippet") {
+                       chrome.runtime.sendMessage({type: "onOpenSnippet", payload: payload.data}, function(response) {
+                       });
+       }
 });
 
 

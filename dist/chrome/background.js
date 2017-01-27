@@ -88,11 +88,26 @@ console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
     },
     // Open the first item of the opened snippet
     onOpenSnippet: function(payload) {
-      if (payload && payload.items) {
-        chrome.tabs.update({'url': payload.items[0].url + "#L"+payload.items[0].line, active:true}, function(x) {
-          console.log("Open working snippet DONE OR NOT ?");
-        });
+      var pos = snippetsList.length;
+      // there is no snippets to show
+      if (payload.items.length == 0) {
+        sendRes({status:"failed"});
+        return;
       }
+
+      // snippets data
+      payload.workingItem = 0;
+      snippetsList.push(payload);
+
+      if (payload && payload.items) {
+        chrome.tabs.create({'url': payload.items[0].url + "#L"+payload.items[0].line, active:true}, function(tab) {
+          workingEnvironment[tab.id] = pos;
+        });
+        sendRes({status:"opening"});
+        return true;
+      }
+      sendRes({status:"failed"});
+      return false;
     },
     //
     // Save current snippet request
