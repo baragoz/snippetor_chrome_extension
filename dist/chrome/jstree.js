@@ -32,6 +32,9 @@ window.addEventListener("onSnippetItemChange", function(evt) {
 	else if (payload.action == "change") {
 		 snippetorUiApi.onChangeItem(payload);
  }
+ else if (payload.action == "swap") {
+		snippetorUiApi.onSwapItem(payload);
+}
  else {
 	 alert("Unknow snippet action: " + payload.action);
  }
@@ -127,9 +130,23 @@ window.addEventListener("onSnipettorAction", function(evt) {
 			addNewItem: function(url, line, comment, callback) {
 				chrome.runtime.sendMessage({type: "addNewItem", payload: {url: url, line: line, comment:comment}}, function(response) {
 					console.log("item added");
+					snippetorExtensionApi.items.push({url: url, line: line, comment:comment});
+					snippetorExtensionApi.snippetsList[snippetorExtensionApi.extensionStorageId].items.push({url: url, line: line, comment:comment});
 					if (callback)
 					  callback(response);
 				});
+			},
+			swapIndex: function(payload) {
+				chrome.runtime.sendMessage({type: "swapCurrentSnippet", payload: payload}, function(response) {
+					console.log("snippet has been updated");
+				});
+        // change the position of old item and new item
+				var item = snippetorExtensionApi.items[payload.oldIndex];
+				snippetorExtensionApi.items.splice(payload.oldIndex, 1);
+				snippetorExtensionApi.items.splice(payload.newIndex, 0, item);
+
+				snippetorExtensionApi.snippetsList[snippetorExtensionApi.extensionStorageId].items.splice(payload.oldIndex, 1);
+				snippetorExtensionApi.snippetsList[snippetorExtensionApi.extensionStorageId].items.splice(payload.newIndex, 0, item);
 			},
 			closeCurrentSnippet: function() {
 				chrome.runtime.sendMessage({type: "closeCurrentSnippet", payload: snippetorExtensionApi.extensionStorageId}, function(response) {
@@ -209,7 +226,7 @@ window.addEventListener("onSnipettorAction", function(evt) {
 
 		 var payload = url.length > 20 ? url.substr(url.length -20): url;
 		 this.snippetsList = findById("menu-snippets-list");
-		 this.snippetsList.innerHTML += '<li><a class="snippetor-navigation-item" aria-label="'+url+'" id="snippetor-active-item-'+this.current_index+'">'+payload+':'+line+'</a></li><li class="snippet-separator-arrow-right"></li>';
+		 this.snippetsList.innerHTML += '<li><a class="snippetor-navigation-item" aria-label="'+url+'" id="snippetor-active-item-'+this.current_index+'">'+payload+':'+line+'</a></li>';
 		 // skip subscription on init
 		 console.log("ADD NEW ITEM: " + line);
 		 if (!isInit)
@@ -226,6 +243,11 @@ window.addEventListener("onSnipettorAction", function(evt) {
 					 };
 				 })(v));
 			 }
+			 Sortable.create(this.snippetsList, {delay: 100,
+				  onEnd: function(evt) {
+				    snippetorExtensionApi.swapIndex({oldIndex: evt.oldIndex, newIndex: evt.newIndex});
+				  }
+				});
 		 }
 		 console.log("Show new item: " + url);
 	 },
@@ -295,7 +317,7 @@ window.addEventListener("onSnipettorAction", function(evt) {
 		 if (isSnippetor)
 			 return;
 		 var snippetsList = findById("menu-snippets-list");
-		 snippetsList.innerHTML = '<li class="snippet-separator-arrow-right"></li>';
+		 snippetsList.innerHTML = '';
 		 if (snippetorExtensionApi.extensionStorageId != null && snippetorExtensionApi.extensionStorageId != undefined) {
 		   for (var x in snippetorExtensionApi.items) {
 			   console.log("POST INIT: []" + x);
@@ -419,6 +441,26 @@ window.addEventListener("onSnipettorAction", function(evt) {
 			 }
 		 }
 	 },
+	 onSwapItem: function(payload) {
+		 console.dir(payload);
+		 console.dir(snippetorExtensionApi.snippetsList);
+		 console.dir(snippetorExtensionApi.items);
+		 // Update snipettor cached data
+		 var item = snippetorExtensionApi.snippetsList[payload.working].items[payload.payload.oldIndex];
+		 console.dir(item);
+		 snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.payload.oldIndex, 1);
+		 snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.payload.newIndex, 0, item);
+
+		 // update snippet item UI if it was current item
+		 if (payload.working == snippetorExtensionApi.extensionStorageId) {
+			   // swap status if it is the same items
+			   snippetorExtensionApi.items.splice(payload.payload.oldIndex, 1);
+	 		   snippetorExtensionApi.items.splice(payload.payload.newIndex, 0, item);
+	 		   console.dir(snippetorExtensionApi.items);
+				 // inser into the middle therefore we need to refresh list
+				 snippetorUiApi.refreshItemsUiList();
+		 }
+	 },
 	 onRemoveItem: function(payload) {
 
 	 },
@@ -436,7 +478,7 @@ window.addEventListener("onSnipettorAction", function(evt) {
   <li><a id="snippetor-save-action">Save</a></li>\
 	<li><a id="snippetor-create-action" >Create</a></li>\
 	<li><a id="snippetor-input-action-wrapper"><input id="snippetor-input-action" placeholder="Draft name please ..."></a></li>\
-	<ul id="menu-snippets-list"><li class="snippet-separator-arrow-right"></li>\
+	<ul id="menu-snippets-list">\
 	</ul>\
   <li style="float:right"><a id="snipettor-close-action">[x]</a></li>\
 </ul>\

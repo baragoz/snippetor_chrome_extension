@@ -18,7 +18,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
     var cssFiles = ['jstree.css', 'octotree.css'];
 
-    var jsFiles = ['jquery.js', 'jquery-ui.js', 'jstree.js'];
+    var jsFiles = ['jquery.js', 'jquery-ui.js', 'jstree.js', 'Sortable.min.js'];
 
     cachedTabs[tabId] = true;
 
@@ -174,6 +174,21 @@ console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
        }
       sendRes(false);
        return false;
+    },
+    swapCurrentSnippet: function(payload) {
+      var pos = workingEnvironment[sender.tab.id];
+      if (pos != undefined) {
+        var item = snippetsList[pos].items[payload.oldIndex];
+				snippetsList[pos].items.splice(payload.oldIndex, 1);
+				snippetsList[pos].items.splice(payload.newIndex, 0, item);
+        sendRes(true);
+
+        // Send item added event for all tabs
+        this._broadcastTabs(sender.tab.id, "onSnippetItemChange", {action: "swap", working:pos, payload:payload});
+        return true;
+      }
+      sendRes(false);
+      return false;
 
     },
     _broadcastTabs: function(senderId, action, payload) {
