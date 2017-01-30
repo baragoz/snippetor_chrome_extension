@@ -216,8 +216,7 @@ console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
         else if (x_url.indexOf("https://cs.chromium.org") == 0) {
           x_url = x_url+ "?l=" + snippetsList[pos].items[itemId].line;
         }
-console.dir(snippetsList[pos].items[itemId]);
-        console.log("LOADING: " + x_url);
+
         chrome.tabs.update({'url': x_url, active:true}, function(x) {
           console.dir(arguments);
         });
