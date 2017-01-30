@@ -279,7 +279,6 @@
                     url: url,
                     line: line
                 };
-                console.log("SHOW BUBBLE !!!" + this.currentItem.line);
 
                 var bubbleElement = this._getBubbleUi();
                 bubbleElement.style.top = (evt.pageY + 20) + "px";
@@ -311,7 +310,8 @@
                             };
                         })(v));
                     }
-                    Sortable.create(this.snippetsList, {
+                    if (typeof SnippetSortable !== 'undefined') {
+                    SnippetSortable.create(this.snippetsList, {
                         delay: 100,
                         onEnd: function(evt) {
                             snippetorExtensionApi.swapIndex({
@@ -320,6 +320,8 @@
                             });
                         }
                     });
+                  } // check if exists 
+
                 }
                 console.log("Show new item: " + url);
             },
@@ -541,7 +543,6 @@
         };
 
         if (!isSnippetor) {
-
             document.body.innerHTML += '\
 <ul id="menu-dddd">\
   <li><a id="snippetor-toggle-menu" class="active">S</a></li>\
@@ -552,14 +553,16 @@
 	</ul>\
   <li style="float:right"><a id="snipettor-close-action">[x]</a></li>\
 </ul>\
-<div id="snipettor-bubble-dialog"><textarea id="snipettor-bubble-dialog-textarea"></textarea>\
-<br>\
-<button id="snipettor-bubble-dialog-save">Save</button>\
-<button id="snipettor-bubble-dialog-cancel">Cancel</button></div>';
+<div id="snipettor-bubble-dialog">\
+  <textarea id="snipettor-bubble-dialog-textarea"></textarea>\
+  <br>\
+  <button id="snipettor-bubble-dialog-prev" style="display:none;">Prev</button>\
+  <button id="snipettor-bubble-dialog-next" style="display:none;">Next</button>\
+  <button id="snipettor-bubble-dialog-save">Save</button>\
+  <button id="snipettor-bubble-dialog-cancel">Cancel</button>\
+</div>';
 
-            document.body.innerHTML += '\
-<ul id="snippetor-vertical-menu">\
-</ul>';
+            document.body.innerHTML += '<ul id="snippetor-vertical-menu"></ul>';
         }
         snippetorUiApi.init();
         if (isSnippetor)

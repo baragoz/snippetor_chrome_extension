@@ -18,7 +18,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
     var cssFiles = ['jstree.css', 'octotree.css'];
 
-    var jsFiles = ['jquery.js', 'jquery-ui.js', 'jstree.js', 'Sortable.min.js'];
+    var jsFiles = ['jquery.js', 'jquery-ui.js', 'SnippetSortable.min.js', 'jstree.js'];
 
     cachedTabs[tabId] = true;
 
