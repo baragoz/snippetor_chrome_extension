@@ -320,7 +320,7 @@
                             });
                         }
                     });
-                  } // check if exists 
+                  } // check if exists
 
                 }
                 console.log("Show new item: " + url);
@@ -358,12 +358,12 @@
                 var vertMenu = findById("snippetor-vertical-menu");
                 if (vertMenu) {
                     // Empty previous value
-                    vertMenu.innerHTML = '<li><a id="snipettor-create-item" href="#">Create</a></li>';
+                    vertMenu.innerHTML = '<li><a id="snipettor-create-item">Create</a></li>';
 
                     for (var t in snippetorExtensionApi.snippetsList) {
                         var snippet = snippetorExtensionApi.snippetsList[t];
                         if (snippet) {
-                            vertMenu.innerHTML += '<li><a href="#" snippet_item="' + t + '" class="snipettor-select-menu-item">' + (snippet.title || 'no title') + '</a></li>';
+                            vertMenu.innerHTML += '<li><a snippet_item="' + t + '" class="snipettor-select-menu-item">' + (snippet.title || 'no title') + '</a></li>';
                         }
                     }
                     findById("snipettor-create-item", "click", function(e) {
