@@ -58,11 +58,39 @@ window.addEventListener("onSnipettorAction", function(evt) {
 
   var snippetorUiApi;
   function subscribeForTheLineDblClick() {
+		if (window.location.href.indexOf("https://github.com") == 0) {
+			subscribeForTheLineDblClick_GitHub();
+		}
+		else if (window.location.href.indexOf("https://cs.chromium.org") == 0) {
+			subscribeForTheLineDblClick_GoogleCodeSearch();
+		}
+	}
+	function subscribeForTheLineDblClick_GoogleCodeSearch() {
+		var lines = document.getElementsByClassName("lineNumber");
+		function snippetorSelectHandler(e) {
+			var line = parseInt(this.innerHTML);
+			var xxx = window.location.href;
+			xxx = xxx.split("?")[0];
+			snippetorUiApi.showBubble(e, xxx, line);
+		}
+		console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
+		var updatedElementsCount = 0;
+		for (var idx =0; idx <lines.length; ++idx) {
+			if (!lines[idx].classList.contains("snipettor-event-observer")) {
+				++updatedElementsCount;
+				lines[idx].className += " snipettor-event-observer";
+			  lines[idx].addEventListener('dblclick', snippetorSelectHandler);
+			}
+		}
+		console.log("updatedElementsCount: " + updatedElementsCount);
+	}
+  function subscribeForTheLineDblClick_GitHub() {
 	  var lines = document.getElementsByClassName("blob-num js-line-number");
 		function snippetorSelectHandler(e) {
 			var line = this.attributes["data-line-number"].value;
-			console.log("CLICKED : " + line);
-			snippetorUiApi.showBubble(e, line);
+			var xxx = window.location.href;
+			xxx = xxx.split("#")[0];
+			snippetorUiApi.showBubble(e, xxx, line);
 		}
 		console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
 		var updatedElementsCount = 0;
@@ -204,13 +232,12 @@ window.addEventListener("onSnipettorAction", function(evt) {
 	 //
 	 // Show input bubble at UI position
 	 //
-	 showBubble: function(evt, line) {
+	 showBubble: function(evt, url, line) {
 		 // Do nothing if snippet was not named
 		 if (snippetorExtensionApi.extensionStorageId == undefined || snippetorExtensionApi.extensionStorageId == null)
 		   return;
-		 var xxx = window.location.href;
-		 xxx = xxx.split("#")[0];
-		 this.currentItem = {url: xxx, line: line};
+
+		 this.currentItem = {url: url, line: line};
 		 console.log("SHOW BUBBLE !!!"+ this.currentItem.line);
 
 		 var bubbleElement = this._getBubbleUi();
