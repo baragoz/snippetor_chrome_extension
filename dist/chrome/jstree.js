@@ -2,9 +2,9 @@
 (function(jQuery) {
     "use strict";
     $(document).ready(function() {
-
+        var snippetorExtensionApi;
         var isSnippetor = (window.location.href.indexOf("http://localhost") == 0);
-
+if (!isSnippetor) {
         window.addEventListener("onSnippetChange", function(evt) {
             var payload = evt.detail;
             if (payload.action == "save") {
@@ -32,7 +32,7 @@
                 alert("Unknow snippet action: " + payload.action);
             }
         });
-
+}
 
         window.addEventListener("onSnipettorAction", function(evt) {
             console.log("SAVED");
@@ -50,6 +50,16 @@
                     type: "onOpenSnippet",
                     payload: payload.data
                 }, function(response) {});
+            } else if (payload.action == "GetInitialState") {
+              console.log("GET IIIIIIIIIIIIIIIIIIIIIIII");
+              snippetorExtensionApi.init(function(response){
+                window.dispatchEvent(new CustomEvent("onInit", {detail: response}));
+              });
+
+            } else if (payload.action == "select-snippet") {
+            } else if (payload.action == "update-snippet") {
+            } else if (payload.action == "delete-snippet-item") {
+            } else if (payload.action == "position-snippet-item") {
             }
         });
 
@@ -121,7 +131,7 @@
             return element;
         }
 
-        var snippetorExtensionApi = {
+        snippetorExtensionApi = {
             items: [],
             extensionStorageId: null,
             extensionWorkingItemId: null,
@@ -138,8 +148,6 @@
                     console.log("Snippet created");
                     if (callback)
                         callback(response);
-                    snippetorUiApi.toggleSave(true);
-                    snippetorUiApi.toggleCreate(false);
                 });
             },
             openSnippet: function(idx) {
@@ -237,6 +245,11 @@
                 });
             }
         };
+
+        // all the code below extend the standard UI of the page
+        // So, we do not need to extend the UI of snipettor page
+        if (isSnippetor)
+          return;
 
         snippetorUiApi = {
             bubbleElement: null,
@@ -542,7 +555,6 @@
 
         };
 
-        if (!isSnippetor) {
             document.body.innerHTML += '\
 <ul id="menu-dddd">\
   <li><a id="snippetor-toggle-menu" class="active">S</a></li>\
@@ -563,10 +575,8 @@
 </div>';
 
             document.body.innerHTML += '<ul id="snippetor-vertical-menu"></ul>';
-        }
+
         snippetorUiApi.init();
-        if (isSnippetor)
-            return;
 
         // Close icon
         var snippetorCloseAction = findById("snipettor-close-action", "click", function(e) {
@@ -593,7 +603,11 @@
             var inTitle = findById("snippetor-input-action");
             if (inTitle && inTitle.value) {
                 //snippetorExtensionApi.saveSnippet();
-                snippetorExtensionApi.createSnippet(inTitle.value);
+                snippetorExtensionApi.createSnippet(inTitle.value, function() {
+                  // activate save and hide create
+                  snippetorUiApi.toggleSave(true);
+                  snippetorUiApi.toggleCreate(false);
+                });
             } else {
                 snipettorCreateAction.style.disabled = true;
             }
