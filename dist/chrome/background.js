@@ -96,12 +96,11 @@ console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
       // snippets data
       payload.workingItem = 0;
       snippetsList.push(payload);
-
       if (payload && payload.items) {
         chrome.tabs.create({'url': payload.items[0].url + "#L"+payload.items[0].line, active:true}, function(tab) {
           workingEnvironment[tab.id] = pos;
         });
-        this._broadcastTabs(-1, "onOpenSnippet", {action: "open", working: workingEnvironment[sender.tab.id], items: payload.items});
+        this._broadcastTabs(-1, "onSnippetChange", {action: "open", working: pos, snippet: payload});
         sendRes({status:"opening"});
         return true;
       }
