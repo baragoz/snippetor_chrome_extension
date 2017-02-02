@@ -78,7 +78,7 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       console.log("SNIPPET SAVED");
       sendRes({notfied: true});
 console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
-      this._broadcastTabs(-1, "onSnippetChange", {action: "save", working: workingEnvironment[sender.tab.id]});
+      this._broadcastTabs(sender.tab.id, "onSnippetChange", {action: "save", working: workingEnvironment[sender.tab.id]});
       // TODO: action depends on preferences; we could add UID only on save
       snippetsList[workingEnvironment[sender.tab.id]] = null;
       return true;
