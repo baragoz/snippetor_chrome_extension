@@ -78,6 +78,7 @@ console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
       this._broadcastTabs(sender.tab.id, "onSnippetChange", {action: "save", working: workingEnvironment[sender.tab.id]});
       // TODO: action depends on preferences; we could add UID only on save
       snippetsList[workingEnvironment[sender.tab.id]] = null;
+      // sender tab is moving to the search or open state on snippet and snippet draft save
       workingEnvironment[sender.tab.id] = null;
       return true;
     },

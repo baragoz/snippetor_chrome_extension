@@ -56,6 +56,14 @@ if (!isSnippetor) {
                 window.dispatchEvent(new CustomEvent("onInit", {detail: response}));
               });
 
+            } else if (payload.action == "unsubscribe") {
+              chrome.runtime.sendMessage({
+                  type: "closeCurrentSnippet",
+                  payload: payload.payload
+              }, function(response) {
+                  console.log("snippet has been unsubscribed. TODO: send a feedback message");
+              });
+
             } else if (payload.action == "select-snippet") {
             } else if (payload.action == "update-snippet") {
             } else if (payload.action == "delete-snippet-item") {
