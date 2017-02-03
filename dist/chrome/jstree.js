@@ -26,8 +26,8 @@ if (!isSnippetor) {
                 snippetorUiApi.onRemoveItem(payload);
             } else if (payload.action == "change") {
                 snippetorUiApi.onChangeItem(payload);
-            } else if (payload.action == "swap") {
-                snippetorUiApi.onSwapItem(payload);
+            } else if (payload.action == "move") {
+                snippetorUiApi.onMoveItem(payload);
             } else {
                 alert("Unknow snippet action: " + payload.action);
             }
@@ -65,9 +65,27 @@ if (!isSnippetor) {
               });
 
             } else if (payload.action == "select-snippet") {
-            } else if (payload.action == "update-snippet") {
+            } else if (payload.action == "update-snippet-item") {
+              chrome.runtime.sendMessage({
+                  type: "updateItem",
+                  payload: payload.payload
+              }, function(response) {
+                  console.log("snippet has been updated");
+              });
             } else if (payload.action == "delete-snippet-item") {
-            } else if (payload.action == "position-snippet-item") {
+              chrome.runtime.sendMessage({
+                  type: "removeItem",
+                  payload: payload.payload.index
+              }, function(response) {
+                  console.log("snippet has been updated");
+              });
+            } else if (payload.action == "move-snippet-item") {
+              chrome.runtime.sendMessage({
+                  type: "moveItem",
+                  payload: payload.payload
+              }, function(response) {
+                  console.log("snippet has been updated");
+              });
             }
         });
 
@@ -209,9 +227,9 @@ if (!isSnippetor) {
                         callback(response);
                 });
             },
-            swapIndex: function(payload) {
+            moveIndex: function(payload) {
                 chrome.runtime.sendMessage({
-                    type: "swapCurrentSnippet",
+                    type: "moveItem",
                     payload: payload
                 }, function(response) {
                     console.log("snippet has been updated");
@@ -335,7 +353,7 @@ if (!isSnippetor) {
                     SnippetSortable.create(this.snippetsList, {
                         delay: 100,
                         onEnd: function(evt) {
-                            snippetorExtensionApi.swapIndex({
+                            snippetorExtensionApi.moveIndex({
                                 oldIndex: evt.oldIndex,
                                 newIndex: evt.newIndex
                             });
@@ -534,7 +552,7 @@ if (!isSnippetor) {
                     }
                 }
             },
-            onSwapItem: function(payload) {
+            onMoveItem: function(payload) {
                 console.dir(payload);
                 console.dir(snippetorExtensionApi.snippetsList);
                 console.dir(snippetorExtensionApi.items);
@@ -555,12 +573,20 @@ if (!isSnippetor) {
                 }
             },
             onRemoveItem: function(payload) {
-
+              snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.payload.index, 1);
+              if (payload.working == snippetorExtensionApi.extensionStorageId) {
+                snippetorExtensionApi.items.splice(payload.payload.index, 1);
+                snippetorUiApi.refreshItemsUiList();
+                console.log("TODO: check if it bubble dialog is opened");
+              }
             },
-            onChangeImem: function(payload) {
-
+            onUpdateItem: function(payload) {
+              snippetorExtensionApi.snippetsList[payload.working].items[payload.payload.index] = payload.item;
+              if (payload.working == snippetorExtensionApi.extensionStorageId) {
+                snippetorExtensionApi.items[payload.payload.index] = payload.item;
+                console.log("TODO: check if it bubble dialog is opened");
+              }
             }
-
         };
 
             document.body.innerHTML += '\

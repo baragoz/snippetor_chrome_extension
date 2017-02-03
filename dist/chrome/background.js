@@ -74,7 +74,7 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
     onSaveSnippetDraft: function(success) {
       console.log("SNIPPET SAVED");
       sendRes({notfied: true});
-console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
+      console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
       this._broadcastTabs(sender.tab.id, "onSnippetChange", {action: "save", working: workingEnvironment[sender.tab.id]});
       // TODO: action depends on preferences; we could add UID only on save
       snippetsList[workingEnvironment[sender.tab.id]] = null;
@@ -150,42 +150,11 @@ console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
       // -1 - Broadcast for all tabs
       this._broadcastTabs(-1, "onSnippetChange", {action: "create", snippet: snippetsList[snippetsList.length-1], working: snippetsList.length-1});
     },
+    updateSnippet: function(payload) {
+
+    },
     closeCurrentSnippet: function(data) {
       workingEnvironment[sender.tab.id] = null;
-    },
-    addNewItem: function(payload) {
-      console.log("ADD NEW ITEM: ");
-      console.dir(payload);
-       var pos = workingEnvironment[sender.tab.id];
-       console.log("POSITION IS: " + pos);
-       console.dir(payload);
-       if (pos != undefined) {
-         console.log("ADD PAYLOAD");
-         snippetsList[pos].items.push(payload);
-         sendRes(true);
-
-         // Send item added event for all tabs
-         this._broadcastTabs(sender.tab.id, "onSnippetItemChange", {action: "add", item: payload, working:pos, index: snippetsList[pos].items.length-1});
-         return true;
-       }
-      sendRes(false);
-       return false;
-    },
-    swapCurrentSnippet: function(payload) {
-      var pos = workingEnvironment[sender.tab.id];
-      if (pos != undefined) {
-        var item = snippetsList[pos].items[payload.oldIndex];
-				snippetsList[pos].items.splice(payload.oldIndex, 1);
-				snippetsList[pos].items.splice(payload.newIndex, 0, item);
-        sendRes(true);
-
-        // Send item added event for all tabs
-        this._broadcastTabs(sender.tab.id, "onSnippetItemChange", {action: "swap", working:pos, payload:payload});
-        return true;
-      }
-      sendRes(false);
-      return false;
-
     },
     _broadcastTabs: function(senderId, action, payload) {
       var code = "window.dispatchEvent(new CustomEvent(\"" + action + "\", {detail: " +JSON.stringify(payload)+ "}));";
@@ -220,7 +189,57 @@ console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
 
 
       sendRes(true);
+    },
+    addNewItem: function(payload) {
+      console.log("ADD NEW ITEM: ");
+      console.dir(payload);
+       var pos = workingEnvironment[sender.tab.id];
+       console.log("POSITION IS: " + pos);
+       console.dir(payload);
+       if (pos != undefined) {
+         console.log("ADD PAYLOAD");
+         snippetsList[pos].items.push(payload);
+         sendRes(true);
+
+         // Send item added event for all tabs
+         this._broadcastTabs(sender.tab.id, "onSnippetItemChange", {action: "add", item: payload, working:pos, index: snippetsList[pos].items.length-1});
+         return true;
+       }
+      sendRes(false);
+       return false;
+    },
+    moveItem: function(payload) {
+      var pos = workingEnvironment[sender.tab.id];
+      if (pos != undefined) {
+        var item = snippetsList[pos].items[payload.oldIndex];
+				snippetsList[pos].items.splice(payload.oldIndex, 1);
+				snippetsList[pos].items.splice(payload.newIndex, 0, item);
+        sendRes(true);
+
+        // Send item added event for all tabs
+        this._broadcastTabs(sender.tab.id, "onSnippetItemChange", {action: "move", working:pos, payload:payload});
+        return true;
+      }
+      sendRes(false);
+      return false;
+    },
+    removeItem: function(index) {
+      var pos = workingEnvironment[sender.tab.id];
+      if (pos != undefined) {
+				snippetsList[pos].items.splice(index, 1);
+        sendRes(true);
+
+        // Send item added event for all tabs
+        this._broadcastTabs(sender.tab.id, "onSnippetItemChange", {action: "remove", working:pos, payload:index});
+        return true;
+      }
+      sendRes(false);
+      return false;
+    },
+    updateItem: function(item) {
+
     }
+
   };
   console.log("HANDLE :" + req.type);
   return handler[req.type](req.payload);
