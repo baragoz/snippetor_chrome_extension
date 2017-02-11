@@ -159,7 +159,7 @@ if (!isSnippetor) {
 
         snippetorExtensionApi = {
             items: [],
-            extensionStorageId: null,
+            workingSnippetId: null,
             extensionWorkingItemId: null,
             state: "idle",
             createSnippet: function(title, callback) {
@@ -170,7 +170,7 @@ if (!isSnippetor) {
                     }
                 }, function(response) {
                     // get an id of the working snippet
-                    snippetorExtensionApi.extensionStorageId = response.working;
+                    snippetorExtensionApi.workingSnippetId = response.working;
                     console.log("Snippet created");
                     if (callback)
                         callback(response);
@@ -182,7 +182,7 @@ if (!isSnippetor) {
                     payload: idx
                 }, function(response) {});
                 snippetorExtensionApi.items = snippetorExtensionApi.snippetsList[idx].items;
-                snippetorExtensionApi.extensionStorageId = idx;
+                snippetorExtensionApi.workingSnippetId = idx;
             },
             openSnippetItem: function(id, callback) {
                 chrome.runtime.sendMessage({
@@ -218,7 +218,7 @@ if (!isSnippetor) {
                         line: line,
                         comment: comment
                     });
-                    snippetorExtensionApi.snippetsList[snippetorExtensionApi.extensionStorageId].items.push({
+                    snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items.push({
                         url: url,
                         line: line,
                         comment: comment
@@ -239,18 +239,18 @@ if (!isSnippetor) {
                 snippetorExtensionApi.items.splice(payload.oldIndex, 1);
                 snippetorExtensionApi.items.splice(payload.newIndex, 0, item);
 
-                snippetorExtensionApi.snippetsList[snippetorExtensionApi.extensionStorageId].items.splice(payload.oldIndex, 1);
-                snippetorExtensionApi.snippetsList[snippetorExtensionApi.extensionStorageId].items.splice(payload.newIndex, 0, item);
+                snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items.splice(payload.oldIndex, 1);
+                snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items.splice(payload.newIndex, 0, item);
             },
             closeCurrentSnippet: function() {
                 chrome.runtime.sendMessage({
                     type: "closeCurrentSnippet",
-                    payload: snippetorExtensionApi.extensionStorageId
+                    payload: snippetorExtensionApi.workingSnippetId
                 }, function(response) {
                     console.log("snippet has been unsubscribed");
                 });
                 // reset state to the IDLE
-                snippetorExtensionApi.extensionStorageId = null;
+                snippetorExtensionApi.workingSnippetId = null;
                 snippetorExtensionApi.items = [];
                 snippetorExtensionApi.extensionWorkingItemId = undefined;
                 snippetorExtensionApi.state = "idle";
@@ -262,7 +262,7 @@ if (!isSnippetor) {
                 }, function(response) {
                     console.log("IIIIIIIIIIIIIIIII");
                     console.dir(response);
-                    snippetorExtensionApi.extensionStorageId = response.working;
+                    snippetorExtensionApi.workingSnippetId = response.working;
                     snippetorExtensionApi.items = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].items : [];
                     snippetorExtensionApi.extensionWorkingItemId = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem : null;
                     snippetorExtensionApi.snippetsList = response.snippets;
@@ -311,7 +311,7 @@ if (!isSnippetor) {
             //
             showBubble: function(evt, url, line) {
                 // Do nothing if snippet was not named
-                if (snippetorExtensionApi.extensionStorageId == undefined || snippetorExtensionApi.extensionStorageId == null)
+                if (snippetorExtensionApi.workingSnippetId == undefined || snippetorExtensionApi.workingSnippetId == null)
                     return;
 
                 this.currentItem = {
@@ -366,7 +366,7 @@ if (!isSnippetor) {
             },
             init: function() {
                 snippetorExtensionApi.init(function() {
-                    if (snippetorExtensionApi.extensionStorageId != null && snippetorExtensionApi.extensionStorageId != undefined) {
+                    if (snippetorExtensionApi.workingSnippetId != null && snippetorExtensionApi.workingSnippetId != undefined) {
                         snippetorUiApi.refreshItemsUiList();
                         snippetorUiApi.toggleSave(true);
                         snippetorUiApi.toggleCreate(false);
@@ -382,7 +382,7 @@ if (!isSnippetor) {
                     // and horizontal otherwise.
                     // So we need to minimize menu on start in case which described above
                     //
-                    if (snippetorExtensionApi.extensionStorageId == null && snippetorExtensionApi.extensionStorageId == undefined) {
+                    if (snippetorExtensionApi.workingSnippetId == null && snippetorExtensionApi.workingSnippetId == undefined) {
                         if (!isSnippetor) {
                             snippetorToggleAction.style.width = "42px";
                             snippetorToggleAction.style.height = "49px";
@@ -430,7 +430,7 @@ if (!isSnippetor) {
                     return;
                 var snippetsList = findById("menu-snippets-list");
                 snippetsList.innerHTML = '';
-                if (snippetorExtensionApi.extensionStorageId != null && snippetorExtensionApi.extensionStorageId != undefined) {
+                if (snippetorExtensionApi.workingSnippetId != null && snippetorExtensionApi.workingSnippetId != undefined) {
                     for (var x in snippetorExtensionApi.items) {
                         console.log("POST INIT: []" + x);
                         var tmp = snippetorExtensionApi.items[x];
@@ -509,7 +509,7 @@ if (!isSnippetor) {
             //
             onSaveSnippet: function(payload) {
                 console.log("SAVE SNIPPET HANDLE WIT CLOSE ");
-                if (payload.working == snippetorExtensionApi.extensionStorageId) {
+                if (payload.working == snippetorExtensionApi.workingSnippetId) {
                     this.closeCurrentSnippet();
                 }
                 // Remove snippet from the menu list, because it is not draft anymore
@@ -528,7 +528,7 @@ if (!isSnippetor) {
             onOpenSnippet: function(payload) {
                 // refresh the list of snippets in the menu
                 // TODO: split draft snippets and opened snippets
-                if (payload.working != snippetorExtensionApi.extensionStorageId) {
+                if (payload.working != snippetorExtensionApi.workingSnippetId) {
                     snippetorExtensionApi.snippetsList[payload.working] = payload.snippet;
                     this.refreshVertMenu();
                 }
@@ -542,7 +542,7 @@ if (!isSnippetor) {
                 snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.index, 0, payload.item);
                 snippetorExtensionApi.items.splice(payload.index, 0, payload.item);
                 // update snippet item UI if it was current item
-                if (payload.working == snippetorExtensionApi.extensionStorageId) {
+                if (payload.working == snippetorExtensionApi.workingSnippetId) {
                     // add to the end of the existing list
                     if (payload.index == snippetorExtensionApi.snippetsList[payload.working].items.length - 1) {
                         this.showNewItem(payload.item.url, payload.item.line, payload.item.comment, true, false);
@@ -563,7 +563,7 @@ if (!isSnippetor) {
                 snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.payload.newIndex, 0, item);
 
                 // update snippet item UI if it was current item
-                if (payload.working == snippetorExtensionApi.extensionStorageId) {
+                if (payload.working == snippetorExtensionApi.workingSnippetId) {
                     // swap status if it is the same items
                     snippetorExtensionApi.items.splice(payload.payload.oldIndex, 1);
                     snippetorExtensionApi.items.splice(payload.payload.newIndex, 0, item);
@@ -574,7 +574,7 @@ if (!isSnippetor) {
             },
             onRemoveItem: function(payload) {
               snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.payload.index, 1);
-              if (payload.working == snippetorExtensionApi.extensionStorageId) {
+              if (payload.working == snippetorExtensionApi.workingSnippetId) {
                 snippetorExtensionApi.items.splice(payload.payload.index, 1);
                 snippetorUiApi.refreshItemsUiList();
                 console.log("TODO: check if it bubble dialog is opened");
@@ -582,7 +582,7 @@ if (!isSnippetor) {
             },
             onUpdateItem: function(payload) {
               snippetorExtensionApi.snippetsList[payload.working].items[payload.payload.index] = payload.item;
-              if (payload.working == snippetorExtensionApi.extensionStorageId) {
+              if (payload.working == snippetorExtensionApi.workingSnippetId) {
                 snippetorExtensionApi.items[payload.payload.index] = payload.item;
                 console.log("TODO: check if it bubble dialog is opened");
               }
