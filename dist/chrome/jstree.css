@@ -38,7 +38,7 @@ ul#menu-dddd {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #333;
+    background-color: #4ABDAC;
 }
 
 ul#menu-dddd li {
@@ -59,7 +59,7 @@ ul#menu-dddd li a {
 }
 
 ul#menu-dddd li a:hover:not(.active) {
-    background-color: #111;
+    background-color: #F7B733;
 }
 
 ul#menu-dddd .active {

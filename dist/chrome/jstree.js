@@ -118,6 +118,12 @@ if (!isSnippetor) {
                     lines[idx].addEventListener('dblclick', snippetorSelectHandler);
                 }
             }
+            // show bubble UI on lines availability
+            if (lines.length >0)
+              setTimeout(function() {
+                snippetorUiApi.showInitialBubble();
+              }, 1200);
+
             console.log("updatedElementsCount: " + updatedElementsCount);
         }
 
@@ -139,6 +145,11 @@ if (!isSnippetor) {
                     lines[idx].addEventListener('dblclick', snippetorSelectHandler);
                 }
             }
+            // show bubble UI on lines availability
+            if (lines.length >0)
+            setTimeout(function() {
+              snippetorUiApi.showInitialBubble();
+            }, 1000);
             console.log("updatedElementsCount: " + updatedElementsCount);
         } // subscribeForTheLineDblClick
         window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
@@ -306,6 +317,32 @@ if (!isSnippetor) {
                 }
                 return this.bubbleElement;
             },
+            showInitialBubble: function() {
+              if (snippetorExtensionApi.workingSnippetId == undefined || snippetorExtensionApi.workingSnippetId == null)
+                  return;
+              if (this.showBubbleRequest)
+                return;
+              var itemIdx = snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].workingItem;
+              var item = snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items[itemIdx];
+              console.log("HREF IS : " + item.url);
+              if (item.url.indexOf("https://github.com/") == 0) {
+                var line = findById("L" + item.line);
+
+                this.showBubbleRequest = true;
+                var absPos = line.getBoundingClientRect();
+                console.dir(line);
+                this.currentItem = item;
+                var bubbleElement = this._getBubbleUi();
+                bubbleElement.style.top = (absPos.top + 20 + line.scrollTop) + "px";
+                bubbleElement.style.left = (absPos.left + 10 + line.scrollLeft) + "px";
+
+console.log("SHOW:  TOP: " + bubbleElement.style.top + "     LEFT:  " + bubbleElement.style.left);
+
+                bubbleElement.style.display = "block";
+
+                //line.click();
+              }
+            },
             //
             // Show input bubble at UI position
             //
@@ -370,6 +407,7 @@ if (!isSnippetor) {
                         snippetorUiApi.refreshItemsUiList();
                         snippetorUiApi.toggleSave(true);
                         snippetorUiApi.toggleCreate(false);
+                        //snippetorUiApi.showInitialBubble();
 
                     } else {
                         snippetorUiApi.toggleSave(false);
