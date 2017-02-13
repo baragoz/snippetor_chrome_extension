@@ -119,7 +119,7 @@ if (!isSnippetor) {
                 }
             }
             // show bubble UI on lines availability
-            if (lines.length >0)
+            if (lines.length >= 0)
               setTimeout(function() {
                 snippetorUiApi.showInitialBubble();
               }, 1200);
@@ -300,6 +300,7 @@ if (!isSnippetor) {
                     var that = this;
                     // Cache BUBBLE UI element and manage hide/show behavior
                     this.bubbleElement = findById("snipettor-bubble-dialog");
+                    findById("snipettor-bubble-dialog-textarea").value = that.currentItem.comment || "";
                     // Subscribe for SAVE button
                     findById("snipettor-bubble-dialog-save", "click", function(e) {
                         // read current value and reset input
@@ -333,14 +334,24 @@ if (!isSnippetor) {
                 console.dir(line);
                 this.currentItem = item;
                 var bubbleElement = this._getBubbleUi();
-                bubbleElement.style.top = (absPos.top + 20 + line.scrollTop) + "px";
-                bubbleElement.style.left = (absPos.left + 10 + line.scrollLeft) + "px";
-
-console.log("SHOW:  TOP: " + bubbleElement.style.top + "     LEFT:  " + bubbleElement.style.left);
-
+                bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
+                bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
                 bubbleElement.style.display = "block";
+              }
+              else if (item.url.indexOf("https://cs.chromium.org/") == 0) {
+                var line = findById("n" + item.line);
+                console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
+                console.dir(line);
 
-                //line.click();
+
+                this.showBubbleRequest = true;
+                var absPos = line.getBoundingClientRect();
+                console.dir(absPos);
+                this.currentItem = item;
+                var bubbleElement = this._getBubbleUi();
+                bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
+                bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
+                bubbleElement.style.display = "block";
               }
             },
             //
