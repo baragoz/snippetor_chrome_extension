@@ -551,7 +551,8 @@ if (!isSnippetor) {
 
                 this.snippetsList = findById("menu-snippets-list");
                 this.snippetsList.innerHTML = "";
-
+                if (this.bubbleElement)
+                    this.bubbleElement.style.display = "none";
                 snippetorExtensionApi.closeCurrentSnippet();
             },
             toggleVMenu: function(flag) {
