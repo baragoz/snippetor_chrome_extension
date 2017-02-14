@@ -643,6 +643,7 @@ if (!isSnippetor) {
             onUpdateItem: function(payload) {
               // update value
               snippetorExtensionApi.snippetsList[payload.working].items[payload.payload.idx].comment = payload.payload.item.comment;
+              snippetorExtensionApi.items[payload.payload.idx].comment = payload.payload.item.comment;
               // TODO: update bubbleUI
             },
             onMoveItem: function(payload) {
