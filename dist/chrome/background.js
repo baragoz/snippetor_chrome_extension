@@ -208,6 +208,21 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       sendRes(false);
        return false;
     },
+    updateItem: function(payload) {
+      var pos = workingEnvironment[sender.tab.id];
+      if (pos != undefined) {
+        // TODO: update another options here
+        console.dir(payload);
+        snippetsList[pos].items[payload.idx].comment = payload.item.comment;
+        sendRes(true);
+
+        // Send item added event for all tabs
+        this._broadcastTabs(-1, "onSnippetItemChange", {action: "update", working:pos, payload:payload});
+        return true;
+      }
+      sendRes(false);
+      return false;
+    },
     moveItem: function(payload) {
       var pos = workingEnvironment[sender.tab.id];
       if (pos != undefined) {
@@ -235,11 +250,7 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       }
       sendRes(false);
       return false;
-    },
-    updateItem: function(item) {
-
     }
-
   };
   console.log("HANDLE :" + req.type);
   return handler[req.type](req.payload);

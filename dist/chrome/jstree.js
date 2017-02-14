@@ -28,6 +28,8 @@ if (!isSnippetor) {
                 snippetorUiApi.onChangeItem(payload);
             } else if (payload.action == "move") {
                 snippetorUiApi.onMoveItem(payload);
+            } else if (payload.action == "update") {
+                snippetorUiApi.onUpdateItem(payload);
             } else {
                 alert("Unknow snippet action: " + payload.action);
             }
@@ -119,10 +121,10 @@ if (!isSnippetor) {
                 }
             }
             // show bubble UI on lines availability
-            if (lines.length >= 0)
+            if (lines.length >0 || snippetorUiApi.showInitialBubbleRequestDone == false)
               setTimeout(function() {
                 snippetorUiApi.showInitialBubble();
-              }, 1200);
+              }, 200);
 
             console.log("updatedElementsCount: " + updatedElementsCount);
         }
@@ -146,10 +148,10 @@ if (!isSnippetor) {
                 }
             }
             // show bubble UI on lines availability
-            if (lines.length >0)
+            if (lines.length >0 || snippetorUiApi.showInitialBubbleRequestDone == false)
             setTimeout(function() {
               snippetorUiApi.showInitialBubble();
-            }, 1000);
+            }, 200);
             console.log("updatedElementsCount: " + updatedElementsCount);
         } // subscribeForTheLineDblClick
         window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
@@ -196,6 +198,10 @@ if (!isSnippetor) {
                 snippetorExtensionApi.workingSnippetId = idx;
             },
             openSnippetItem: function(id, callback) {
+                snippetorUiApi.showInitialBubbleRequestDone = false;
+                snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].workingItem = id;
+                console.log("IIIIIIIIIIIIIIIIIITEMP");
+                console.dir(snippetorUiApi.currentItem);
                 chrome.runtime.sendMessage({
                     type: "openItem",
                     payload: id
@@ -204,6 +210,7 @@ if (!isSnippetor) {
                     if (callback)
                         callback(response);
                 });
+
             },
             saveSnippet: function(callback) {
                 chrome.runtime.sendMessage({
@@ -237,6 +244,16 @@ if (!isSnippetor) {
                     if (callback)
                         callback(response);
                 });
+            },
+            updateItemComment: function(idx, comment) {
+              chrome.runtime.sendMessage({
+                  type: "updateItem",
+                  payload: {idx: idx, item: {comment: comment}}
+              }, function(response) {
+                  console.log("snippet has been updated");
+              });
+              this.snippetsList[this.workingSnippetId].items[idx].comment = comment;
+              this.items[idx].comment = comment;
             },
             moveIndex: function(payload) {
                 chrome.runtime.sendMessage({
@@ -307,7 +324,12 @@ if (!isSnippetor) {
                         var r = findById("snipettor-bubble-dialog-textarea").value;
                         findById("snipettor-bubble-dialog-textarea").value = "";
                         console.log("SAVE BUBBLE !!!: " + that.currentItem.line)
-                        snippetorUiApi.showNewItem(that.currentItem.url, that.currentItem.line, r);
+                        if (that.currentItem.idx != undefined) {
+                          snippetorUiApi.updateItemComment(that.currentItem.idx, r);
+                        }
+                        else {
+                          snippetorUiApi.showNewItem(that.currentItem.url, that.currentItem.line, r);
+                        }
                         that.bubbleElement.style.display = "none";
                     });
                     // Subscrbe for CANCEL button
@@ -316,23 +338,31 @@ if (!isSnippetor) {
                         that.bubbleElement.style.display = "none";
                     });
                 }
+                else {
+                  findById("snipettor-bubble-dialog-textarea").value = this.currentItem.comment || "";
+                }
                 return this.bubbleElement;
             },
             showInitialBubble: function() {
               if (snippetorExtensionApi.workingSnippetId == undefined || snippetorExtensionApi.workingSnippetId == null)
                   return;
-              if (this.showBubbleRequest)
+
+              if (this.showInitialBubbleRequestDone)
                 return;
+
               var itemIdx = snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].workingItem;
               var item = snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items[itemIdx];
               console.log("HREF IS : " + item.url);
               if (item.url.indexOf("https://github.com/") == 0) {
                 var line = findById("L" + item.line);
 
-                this.showBubbleRequest = true;
+                this.showInitialBubbleRequestDone = true;
                 var absPos = line.getBoundingClientRect();
                 console.dir(line);
+                // Cache current item position
                 this.currentItem = item;
+                this.currentItem.idx = itemIdx;
+                // Handle UI element position
                 var bubbleElement = this._getBubbleUi();
                 bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
                 bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
@@ -344,10 +374,13 @@ if (!isSnippetor) {
                 console.dir(line);
 
 
-                this.showBubbleRequest = true;
+                this.showInitialBubbleRequestDone = true;
                 var absPos = line.getBoundingClientRect();
                 console.dir(absPos);
+                // Cache current item index
                 this.currentItem = item;
+                this.currentItem.idx = itemIdx;
+                // Handle UI element position
                 var bubbleElement = this._getBubbleUi();
                 bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
                 bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
@@ -372,6 +405,12 @@ if (!isSnippetor) {
                 bubbleElement.style.left = (evt.pageX + 10) + "px";
                 bubbleElement.style.display = "block";
                 evt.stopPropagation();
+            },
+            updateItemComment: function(idx, comment) {
+              // Do nothing if snippet was not named
+              if (snippetorExtensionApi.workingSnippetId == undefined || snippetorExtensionApi.workingSnippetId == null)
+                  return;
+              snippetorExtensionApi.updateItemComment(idx, comment);
             },
             snippetsList: null,
             current_index: 0,
@@ -600,6 +639,11 @@ if (!isSnippetor) {
                         snippetorUiApi.refreshItemsUiList();
                     }
                 }
+            },
+            onUpdateItem: function(payload) {
+              // update value
+              snippetorExtensionApi.snippetsList[payload.working].items[payload.payload.idx].comment = payload.payload.item.comment;
+              // TODO: update bubbleUI
             },
             onMoveItem: function(payload) {
                 console.dir(payload);
