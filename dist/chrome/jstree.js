@@ -37,7 +37,6 @@ if (!isSnippetor) {
 }
 
         window.addEventListener("onSnipettorAction", function(evt) {
-            console.log("SAVED");
             var payload = evt.detail;
             console.dir(payload);
             if (payload.action == "saved-draft") {
@@ -52,8 +51,12 @@ if (!isSnippetor) {
                     type: "onOpenSnippet",
                     payload: payload.data
                 }, function(response) {});
+            } if (payload.action == "select-snippet") {
+                chrome.runtime.sendMessage({
+                    type: "openSnippet",
+                    payload: payload.data
+                }, function(response) {});
             } else if (payload.action == "GetInitialState") {
-              console.log("GET IIIIIIIIIIIIIIIIIIIIIIII");
               snippetorExtensionApi.init(function(response){
                 window.dispatchEvent(new CustomEvent("onInit", {detail: response}));
               });
@@ -200,8 +203,7 @@ if (!isSnippetor) {
             openSnippetItem: function(id, callback) {
                 snippetorUiApi.showInitialBubbleRequestDone = false;
                 snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].workingItem = id;
-                console.log("IIIIIIIIIIIIIIIIIITEMP");
-                console.dir(snippetorUiApi.currentItem);
+
                 chrome.runtime.sendMessage({
                     type: "openItem",
                     payload: id
