@@ -3,7 +3,7 @@
     "use strict";
     $(document).ready(function() {
         var snippetorExtensionApi;
-        var isSnippetor = (window.location.href.indexOf("http://localhost") == 0);
+        var isSnippetor = (window.location.href.indexOf("http://localhost:8000") == 0);
 if (!isSnippetor) {
         window.addEventListener("onSnippetChange", function(evt) {
             var payload = evt.detail;
@@ -101,9 +101,43 @@ if (!isSnippetor) {
             if (window.location.href.indexOf("https://github.com") == 0) {
                 subscribeForTheLineDblClick_GitHub();
             } else if (window.location.href.indexOf("https://cs.chromium.org") == 0) {
+              setTimeout(function() {
                 subscribeForTheLineDblClick_GoogleCodeSearch();
+                }, 1200);
+            } else if (window.location.href.indexOf("http://localhost:3000") == 0) {
+              setTimeout(function() {
+                subscribeForTheLineDblClick_UML();
+              }, 1200);
             }
         }
+
+        function subscribeForTheLineDblClick_UML() {
+            var elements = document.getElementsByClassName("us-element-border");
+
+            function snippetorSelectHandler(e) {
+                var uid = this.id;
+                var xxx = window.location.href;
+                snippetorUiApi.showBubble(e, xxx, uid);
+            }
+
+            console.log("GOT THE NUMBER OF ELEMENTS: " + elements.length);
+            var updatedElementsCount = 0;
+            for (var idx = 0; idx < elements.length; ++idx) {
+                if (!elements[idx].classList.contains("snipettor-event-observer")) {
+                    ++updatedElementsCount;
+                    elements[idx].className += " snipettor-event-observer";
+                    elements[idx].addEventListener('dblclick', snippetorSelectHandler);
+                }
+            }
+            // show bubble UI on lines availability
+            if (elements.length >0 || snippetorUiApi.showInitialBubbleRequestDone == false)
+              setTimeout(function() {
+                snippetorUiApi.showInitialBubble();
+              }, 200);
+
+            console.log("updatedElementsCount: " + updatedElementsCount);
+        }
+
 
         function subscribeForTheLineDblClick_GoogleCodeSearch() {
             var lines = document.getElementsByClassName("lineNumber");
@@ -354,6 +388,10 @@ if (!isSnippetor) {
 
               var itemIdx = snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].workingItem;
               var item = snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items[itemIdx];
+              // skip bubble show on empy element
+              if (!itemIdx || !item)
+                return;
+
               console.log("HREF IS : " + item.url);
               if (item.url.indexOf("https://github.com/") == 0) {
                 var line = findById("L" + item.line);
@@ -372,6 +410,24 @@ if (!isSnippetor) {
               }
               else if (item.url.indexOf("https://cs.chromium.org/") == 0) {
                 var line = findById("n" + item.line);
+                console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
+                console.dir(line);
+
+
+                this.showInitialBubbleRequestDone = true;
+                var absPos = line.getBoundingClientRect();
+                console.dir(absPos);
+                // Cache current item index
+                this.currentItem = item;
+                this.currentItem.idx = itemIdx;
+                // Handle UI element position
+                var bubbleElement = this._getBubbleUi();
+                bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
+                bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
+                bubbleElement.style.display = "block";
+              }
+              else if (item.url.indexOf("http://localhost:3000/") == 0) {
+                var line = findById(item.line);
                 console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
                 console.dir(line);
 
@@ -699,8 +755,8 @@ if (!isSnippetor) {
 <div id="snipettor-bubble-dialog">\
   <textarea id="snipettor-bubble-dialog-textarea"></textarea>\
   <br>\
-  <button id="snipettor-bubble-dialog-prev" style="display:none;">Prev</button>\
-  <button id="snipettor-bubble-dialog-next" style="display:none;">Next</button>\
+  <button id="snipettor-bubble-dialog-prev" style="float:left;">Prev</button>\
+  <button id="snipettor-bubble-dialog-next" style="float:left;">Next</button>\
   <button id="snipettor-bubble-dialog-save">Save</button>\
   <button id="snipettor-bubble-dialog-cancel">Cancel</button>\
 </div>';

@@ -86,22 +86,32 @@ chrome.runtime.onMessage.addListener(function (req, sender, sendRes) {
       // notify all opened tabs about snippet remove (please do not miss with save cancelation)
     },
     // Open the first item of the opened snippet
-    onOpenSnippet: function(payload) {
+    onOpenSnippet: function(payload2) {
+      var payload = payload2.payload;
+
       var pos = snippetsList.length;
+      if (payload2.index != undefined) {
+        payload = snippetsList[payload2.index];
+        pos = payload2.index;
+      }
       // there is no snippets to show
-      if (payload.items.length == 0) {
+      if (!payload || payload.items.length == 0) {
         sendRes({status:"failed"});
         return;
       }
 
       // snippets data
       payload.workingItem = 0;
-      snippetsList.push(payload);
+      if (payload2.index == undefined)
+        snippetsList.push(payload);
+
       if (payload && payload.items) {
         chrome.tabs.create({'url': payload.items[0].url + "#L"+payload.items[0].line, active:true}, function(tab) {
           workingEnvironment[tab.id] = pos;
         });
-        this._broadcastTabs(-1, "onSnippetChange", {action: "open", working: pos, snippet: payload});
+        // prevent re-open notification
+        if (payload2.index == undefined)
+          this._broadcastTabs(-1, "onSnippetChange", {action: "open", working: pos, snippet: payload});
         sendRes({status:"opening"});
         return true;
       }
