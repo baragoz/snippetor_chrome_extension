@@ -2,6 +2,7 @@
 (function(jQuery) {
     "use strict";
     $(document).ready(function() {
+
         var ns = {
             extApi: {},
             uiApi: {}
@@ -216,11 +217,11 @@
             extensionWorkingItemId: null,
             state: "idle",
             isWorkingSnippet: function(payload) {
-              return (payload.working == workingSnippetId);
+              return (payload.working == this.workingSnippetId);
             },
-            onSaveSnippet: function(payload) {
+            onSaveSnippet: function(id) {
               // Remove snippet from the menu list, because it is not draft anymore
-              ns.extApi.snippetsList[payload.working] = null;
+              ns.extApi.snippetsList[id] = null;
             },
             createSnippet: function(title, callback) {
                 chrome.runtime.sendMessage({
@@ -392,6 +393,9 @@
                 }
                 return this.bubbleElement;
             },
+            //
+            // Show an initial bubble of the snippet page open
+            //
             showInitialBubble: function() {
                 if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
                     return;
@@ -601,7 +605,6 @@
                 ns.uiApi.toggleCreate(false);
                 ns.uiApi.toggleVMenu(false);
 
-
                 ns.extApi.openSnippet(idx);
                 // refresh snippets on open
                 ns.uiApi.refreshItemsUiList();
@@ -756,7 +759,7 @@
             }
         };
 
-        document.body.innerHTML += '\
+        $('\
 <ul id="menu-dddd">\
   <li><a id="snippetor-toggle-menu" class="active">S</a></li>\
   <li><a id="snippetor-save-action">Save</a></li>\
@@ -773,9 +776,9 @@
   <button id="snipettor-bubble-dialog-next" style="float:left;">Next</button>\
   <button id="snipettor-bubble-dialog-save">Save</button>\
   <button id="snipettor-bubble-dialog-cancel">Cancel</button>\
-</div>';
+</div>').appendTo(document.body);
 
-        document.body.innerHTML += '<ul id="snippetor-vertical-menu"></ul>';
+        $('<ul id="snippetor-vertical-menu"></ul>').appendTo(document.body);
 
         ns.uiApi.init();
 
@@ -828,10 +831,8 @@
             }
         });
 
-        // asdads ad
+        // once more
         subscribeForTheLineDblClick();
-
-
     }); // document ready
 
 })($);
