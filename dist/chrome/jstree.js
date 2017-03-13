@@ -2,39 +2,42 @@
 (function(jQuery) {
     "use strict";
     $(document).ready(function() {
-        var ns = {extApi: {}, uiApi: {}};
+        var ns = {
+            extApi: {},
+            uiApi: {}
+        };
         var isSnippetor = (window.location.href.indexOf("http://localhost:8000") == 0);
-if (!isSnippetor) {
-        window.addEventListener("onSnippetChange", function(evt) {
-            var payload = evt.detail;
-            if (payload.action == "save") {
-                ns.uiApi.onSaveSnippet(payload);
-            } else if (payload.action == "create") {
-                ns.uiApi.onCreateSnippet(payload);
-            } else if (payload.action == "open") {
-                ns.uiApi.onOpenSnippet(payload);
-            } else {
-                alert("Unknow snippet action: " + payload.action);
-            }
-        });
+        if (!isSnippetor) {
+            window.addEventListener("onSnippetChange", function(evt) {
+                var payload = evt.detail;
+                if (payload.action == "save") {
+                    ns.uiApi.onSaveSnippet(payload);
+                } else if (payload.action == "create") {
+                    ns.uiApi.onCreateSnippet(payload);
+                } else if (payload.action == "open") {
+                    ns.uiApi.onOpenSnippet(payload);
+                } else {
+                    alert("Unknow snippet action: " + payload.action);
+                }
+            });
 
-        window.addEventListener("onSnippetItemChange", function(evt) {
-            var payload = evt.detail;
-            if (payload.action == "add") {
-                ns.uiApi.onAddItem(payload);
-            } else if (payload.action == "remove") {
-                ns.uiApi.onRemoveItem(payload);
-            } else if (payload.action == "change") {
-                ns.uiApi.onChangeItem(payload);
-            } else if (payload.action == "move") {
-                ns.uiApi.onMoveItem(payload);
-            } else if (payload.action == "update") {
-                ns.uiApi.onUpdateItem(payload);
-            } else {
-                alert("Unknow snippet action: " + payload.action);
-            }
-        });
-}
+            window.addEventListener("onSnippetItemChange", function(evt) {
+                var payload = evt.detail;
+                if (payload.action == "add") {
+                    ns.uiApi.onAddItem(payload);
+                } else if (payload.action == "remove") {
+                    ns.uiApi.onRemoveItem(payload);
+                } else if (payload.action == "change") {
+                    ns.uiApi.onChangeItem(payload);
+                } else if (payload.action == "move") {
+                    ns.uiApi.onMoveItem(payload);
+                } else if (payload.action == "update") {
+                    ns.uiApi.onUpdateItem(payload);
+                } else {
+                    alert("Unknow snippet action: " + payload.action);
+                }
+            });
+        }
 
         window.addEventListener("onSnipettorAction", function(evt) {
             var payload = evt.detail;
@@ -51,61 +54,63 @@ if (!isSnippetor) {
                     type: "onOpenSnippet",
                     payload: payload.data
                 }, function(response) {});
-            } if (payload.action == "select-snippet") {
+            }
+            if (payload.action == "select-snippet") {
                 chrome.runtime.sendMessage({
                     type: "openSnippet",
                     payload: payload.data
                 }, function(response) {});
             } else if (payload.action == "GetInitialState") {
-              ns.extApi.init(function(response){
-                window.dispatchEvent(new CustomEvent("onInit", {detail: response}));
-              });
+                ns.extApi.init(function(response) {
+                    window.dispatchEvent(new CustomEvent("onInit", {
+                        detail: response
+                    }));
+                });
 
             } else if (payload.action == "unsubscribe") {
-              chrome.runtime.sendMessage({
-                  type: "closeCurrentSnippet",
-                  payload: payload.payload
-              }, function(response) {
-                  console.log("snippet has been unsubscribed. TODO: send a feedback message");
-              });
+                chrome.runtime.sendMessage({
+                    type: "closeCurrentSnippet",
+                    payload: payload.payload
+                }, function(response) {
+                    console.log("snippet has been unsubscribed. TODO: send a feedback message");
+                });
 
-            } else if (payload.action == "select-snippet") {
-            } else if (payload.action == "update-snippet-item") {
-              chrome.runtime.sendMessage({
-                  type: "updateItem",
-                  payload: payload.payload
-              }, function(response) {
-                  console.log("snippet has been updated");
-              });
+            } else if (payload.action == "select-snippet") {} else if (payload.action == "update-snippet-item") {
+                chrome.runtime.sendMessage({
+                    type: "updateItem",
+                    payload: payload.payload
+                }, function(response) {
+                    console.log("snippet has been updated");
+                });
             } else if (payload.action == "delete-snippet-item") {
-              chrome.runtime.sendMessage({
-                  type: "removeItem",
-                  payload: payload.payload.index
-              }, function(response) {
-                  console.log("snippet has been updated");
-              });
+                chrome.runtime.sendMessage({
+                    type: "removeItem",
+                    payload: payload.payload.index
+                }, function(response) {
+                    console.log("snippet has been updated");
+                });
             } else if (payload.action == "move-snippet-item") {
-              chrome.runtime.sendMessage({
-                  type: "moveItem",
-                  payload: payload.payload
-              }, function(response) {
-                  console.log("snippet has been updated");
-              });
+                chrome.runtime.sendMessage({
+                    type: "moveItem",
+                    payload: payload.payload
+                }, function(response) {
+                    console.log("snippet has been updated");
+                });
             }
         });
 
 
-      function subscribeForTheLineDblClick() {
+        function subscribeForTheLineDblClick() {
             if (window.location.href.indexOf("https://github.com") == 0) {
                 subscribeForTheLineDblClick_GitHub();
             } else if (window.location.href.indexOf("https://cs.chromium.org") == 0) {
-              setTimeout(function() {
-                subscribeForTheLineDblClick_GoogleCodeSearch();
+                setTimeout(function() {
+                    subscribeForTheLineDblClick_GoogleCodeSearch();
                 }, 1200);
             } else if (window.location.href.indexOf("http://localhost:3000") == 0) {
-              setTimeout(function() {
-                subscribeForTheLineDblClick_UML();
-              }, 1200);
+                setTimeout(function() {
+                    subscribeForTheLineDblClick_UML();
+                }, 1200);
             }
         }
 
@@ -128,10 +133,10 @@ if (!isSnippetor) {
                 }
             }
             // show bubble UI on lines availability
-            if (elements.length >0 || ns.uiApi.showInitialBubbleRequestDone == false)
-              setTimeout(function() {
-                ns.uiApi.showInitialBubble();
-              }, 200);
+            if (elements.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
+                setTimeout(function() {
+                    ns.uiApi.showInitialBubble();
+                }, 200);
 
             console.log("updatedElementsCount: " + updatedElementsCount);
         }
@@ -156,10 +161,10 @@ if (!isSnippetor) {
                 }
             }
             // show bubble UI on lines availability
-            if (lines.length >0 || ns.uiApi.showInitialBubbleRequestDone == false)
-              setTimeout(function() {
-                ns.uiApi.showInitialBubble();
-              }, 200);
+            if (lines.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
+                setTimeout(function() {
+                    ns.uiApi.showInitialBubble();
+                }, 200);
 
             console.log("updatedElementsCount: " + updatedElementsCount);
         }
@@ -183,10 +188,10 @@ if (!isSnippetor) {
                 }
             }
             // show bubble UI on lines availability
-            if (lines.length >0 || ns.uiApi.showInitialBubbleRequestDone == false)
-            setTimeout(function() {
-              ns.uiApi.showInitialBubble();
-            }, 200);
+            if (lines.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
+                setTimeout(function() {
+                    ns.uiApi.showInitialBubble();
+                }, 200);
             console.log("updatedElementsCount: " + updatedElementsCount);
         } // subscribeForTheLineDblClick
         window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
@@ -210,6 +215,13 @@ if (!isSnippetor) {
             workingSnippetId: null,
             extensionWorkingItemId: null,
             state: "idle",
+            isWorkingSnippet: function(payload) {
+              return (payload.working == workingSnippetId);
+            },
+            onSaveSnippet: function(payload) {
+              // Remove snippet from the menu list, because it is not draft anymore
+              ns.extApi.snippetsList[payload.working] = null;
+            },
             createSnippet: function(title, callback) {
                 chrome.runtime.sendMessage({
                     type: "createSnippet",
@@ -280,14 +292,19 @@ if (!isSnippetor) {
                 });
             },
             updateItemComment: function(idx, comment) {
-              chrome.runtime.sendMessage({
-                  type: "updateItem",
-                  payload: {idx: idx, item: {comment: comment}}
-              }, function(response) {
-                  console.log("snippet has been updated");
-              });
-              this.snippetsList[this.workingSnippetId].items[idx].comment = comment;
-              this.items[idx].comment = comment;
+                chrome.runtime.sendMessage({
+                    type: "updateItem",
+                    payload: {
+                        idx: idx,
+                        item: {
+                            comment: comment
+                        }
+                    }
+                }, function(response) {
+                    console.log("snippet has been updated");
+                });
+                this.snippetsList[this.workingSnippetId].items[idx].comment = comment;
+                this.items[idx].comment = comment;
             },
             moveIndex: function(payload) {
                 chrome.runtime.sendMessage({
@@ -337,7 +354,7 @@ if (!isSnippetor) {
         // all the code below extend the standard UI of the page
         // So, we do not need to extend the UI of snipettor page
         if (isSnippetor)
-          return;
+            return;
 
         ns.uiApi = {
             bubbleElement: null,
@@ -359,10 +376,9 @@ if (!isSnippetor) {
                         findById("snipettor-bubble-dialog-textarea").value = "";
                         console.log("SAVE BUBBLE !!!: " + that.currentItem.line)
                         if (that.currentItem.idx != undefined) {
-                          ns.uiApi.updateItemComment(that.currentItem.idx, r);
-                        }
-                        else {
-                          ns.uiApi.showNewItem(that.currentItem.url, that.currentItem.line, r);
+                            ns.uiApi.updateItemComment(that.currentItem.idx, r);
+                        } else {
+                            ns.uiApi.showNewItem(that.currentItem.url, that.currentItem.line, r);
                         }
                         that.bubbleElement.style.display = "none";
                     });
@@ -371,77 +387,74 @@ if (!isSnippetor) {
                         findById("snipettor-bubble-dialog-textarea").value = "";
                         that.bubbleElement.style.display = "none";
                     });
-                }
-                else {
-                  findById("snipettor-bubble-dialog-textarea").value = this.currentItem.comment || "";
+                } else {
+                    findById("snipettor-bubble-dialog-textarea").value = this.currentItem.comment || "";
                 }
                 return this.bubbleElement;
             },
             showInitialBubble: function() {
-              if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
-                  return;
+                if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
+                    return;
 
-              if (this.showInitialBubbleRequestDone)
-                return;
+                if (this.showInitialBubbleRequestDone)
+                    return;
 
-              var itemIdx = ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem;
-              var item = ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[itemIdx];
-              // skip bubble show on empy element
-              if (!itemIdx || !item)
-                return;
+                var itemIdx = ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem;
+                var item = ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[itemIdx];
+                // skip bubble show on empy element
+                if (!itemIdx || !item)
+                    return;
 
-              console.log("HREF IS : " + item.url);
-              if (item.url.indexOf("https://github.com/") == 0) {
-                var line = findById("L" + item.line);
+                console.log("HREF IS : " + item.url);
+                if (item.url.indexOf("https://github.com/") == 0) {
+                    var line = findById("L" + item.line);
 
-                this.showInitialBubbleRequestDone = true;
-                var absPos = line.getBoundingClientRect();
-                console.dir(line);
-                // Cache current item position
-                this.currentItem = item;
-                this.currentItem.idx = itemIdx;
-                // Handle UI element position
-                var bubbleElement = this._getBubbleUi();
-                bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
-                bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
-                bubbleElement.style.display = "block";
-              }
-              else if (item.url.indexOf("https://cs.chromium.org/") == 0) {
-                var line = findById("n" + item.line);
-                console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
-                console.dir(line);
-
-
-                this.showInitialBubbleRequestDone = true;
-                var absPos = line.getBoundingClientRect();
-                console.dir(absPos);
-                // Cache current item index
-                this.currentItem = item;
-                this.currentItem.idx = itemIdx;
-                // Handle UI element position
-                var bubbleElement = this._getBubbleUi();
-                bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
-                bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
-                bubbleElement.style.display = "block";
-              }
-              else if (item.url.indexOf("http://localhost:3000/") == 0) {
-                var line = findById(item.line);
-                console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
-                console.dir(line);
+                    this.showInitialBubbleRequestDone = true;
+                    var absPos = line.getBoundingClientRect();
+                    console.dir(line);
+                    // Cache current item position
+                    this.currentItem = item;
+                    this.currentItem.idx = itemIdx;
+                    // Handle UI element position
+                    var bubbleElement = this._getBubbleUi();
+                    bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
+                    bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
+                    bubbleElement.style.display = "block";
+                } else if (item.url.indexOf("https://cs.chromium.org/") == 0) {
+                    var line = findById("n" + item.line);
+                    console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
+                    console.dir(line);
 
 
-                this.showInitialBubbleRequestDone = true;
-                var absPos = line.getBoundingClientRect();
-                console.dir(absPos);
-                // Cache current item index
-                this.currentItem = item;
-                this.currentItem.idx = itemIdx;
-                // Handle UI element position
-                var bubbleElement = this._getBubbleUi();
-                bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
-                bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
-                bubbleElement.style.display = "block";
-              }
+                    this.showInitialBubbleRequestDone = true;
+                    var absPos = line.getBoundingClientRect();
+                    console.dir(absPos);
+                    // Cache current item index
+                    this.currentItem = item;
+                    this.currentItem.idx = itemIdx;
+                    // Handle UI element position
+                    var bubbleElement = this._getBubbleUi();
+                    bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
+                    bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
+                    bubbleElement.style.display = "block";
+                } else if (item.url.indexOf("http://localhost:3000/") == 0) {
+                    var line = findById(item.line);
+                    console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
+                    console.dir(line);
+
+
+                    this.showInitialBubbleRequestDone = true;
+                    var absPos = line.getBoundingClientRect();
+                    console.dir(absPos);
+                    // Cache current item index
+                    this.currentItem = item;
+                    this.currentItem.idx = itemIdx;
+                    // Handle UI element position
+                    var bubbleElement = this._getBubbleUi();
+                    bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
+                    bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
+                    bubbleElement.style.display = "block";
+                }
             },
             //
             // Show input bubble at UI position
@@ -463,10 +476,10 @@ if (!isSnippetor) {
                 evt.stopPropagation();
             },
             updateItemComment: function(idx, comment) {
-              // Do nothing if snippet was not named
-              if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
-                  return;
-              ns.extApi.updateItemComment(idx, comment);
+                // Do nothing if snippet was not named
+                if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
+                    return;
+                ns.extApi.updateItemComment(idx, comment);
             },
             snippetsList: null,
             current_index: 0,
@@ -493,16 +506,16 @@ if (!isSnippetor) {
                         })(v));
                     }
                     if (typeof SnippetSortable !== 'undefined') {
-                    SnippetSortable.create(this.snippetsList, {
-                        delay: 100,
-                        onEnd: function(evt) {
-                            ns.extApi.moveIndex({
-                                oldIndex: evt.oldIndex,
-                                newIndex: evt.newIndex
-                            });
-                        }
-                    });
-                  } // check if exists
+                        SnippetSortable.create(this.snippetsList, {
+                            delay: 100,
+                            onEnd: function(evt) {
+                                ns.extApi.moveIndex({
+                                    oldIndex: evt.oldIndex,
+                                    newIndex: evt.newIndex
+                                });
+                            }
+                        });
+                    } // check if exists
 
                 }
                 console.log("Show new item: " + url);
@@ -609,6 +622,8 @@ if (!isSnippetor) {
                 this.snippetsList.innerHTML = "";
                 if (this.bubbleElement)
                     this.bubbleElement.style.display = "none";
+
+                // Notify extension about snippet close for the current tab
                 ns.extApi.closeCurrentSnippet();
             },
             toggleVMenu: function(flag) {
@@ -654,11 +669,12 @@ if (!isSnippetor) {
             //
             onSaveSnippet: function(payload) {
                 console.log("SAVE SNIPPET HANDLE WIT CLOSE ");
-                if (payload.working == ns.extApi.workingSnippetId) {
-                    this.closeCurrentSnippet();
-                }
+
+                if (ns.extApi.isWorkingSnippet(payload))
+                  this.closeCurrentSnippet();
+
                 // Remove snippet from the menu list, because it is not draft anymore
-                ns.extApi.snippetsList[payload.working] = null;
+                ns.extApi.onSaveSnippet(payload.working);
                 this.refreshVertMenu();
 
             },
@@ -698,10 +714,10 @@ if (!isSnippetor) {
                 }
             },
             onUpdateItem: function(payload) {
-              // update value
-              ns.extApi.snippetsList[payload.working].items[payload.payload.idx].comment = payload.payload.item.comment;
-              ns.extApi.items[payload.payload.idx].comment = payload.payload.item.comment;
-              // TODO: update bubbleUI
+                // update value
+                ns.extApi.snippetsList[payload.working].items[payload.payload.idx].comment = payload.payload.item.comment;
+                ns.extApi.items[payload.payload.idx].comment = payload.payload.item.comment;
+                // TODO: update bubbleUI
             },
             onMoveItem: function(payload) {
                 console.dir(payload);
@@ -724,23 +740,23 @@ if (!isSnippetor) {
                 }
             },
             onRemoveItem: function(payload) {
-              ns.extApi.snippetsList[payload.working].items.splice(payload.payload.index, 1);
-              if (payload.working == ns.extApi.workingSnippetId) {
-                ns.extApi.items.splice(payload.payload.index, 1);
-                ns.uiApi.refreshItemsUiList();
-                console.log("TODO: check if it bubble dialog is opened");
-              }
+                ns.extApi.snippetsList[payload.working].items.splice(payload.payload.index, 1);
+                if (payload.working == ns.extApi.workingSnippetId) {
+                    ns.extApi.items.splice(payload.payload.index, 1);
+                    ns.uiApi.refreshItemsUiList();
+                    console.log("TODO: check if it bubble dialog is opened");
+                }
             },
             onUpdateItem: function(payload) {
-              ns.extApi.snippetsList[payload.working].items[payload.payload.index] = payload.item;
-              if (payload.working == ns.extApi.workingSnippetId) {
-                ns.extApi.items[payload.payload.index] = payload.item;
-                console.log("TODO: check if it bubble dialog is opened");
-              }
+                ns.extApi.snippetsList[payload.working].items[payload.payload.index] = payload.item;
+                if (payload.working == ns.extApi.workingSnippetId) {
+                    ns.extApi.items[payload.payload.index] = payload.item;
+                    console.log("TODO: check if it bubble dialog is opened");
+                }
             }
         };
 
-            document.body.innerHTML += '\
+        document.body.innerHTML += '\
 <ul id="menu-dddd">\
   <li><a id="snippetor-toggle-menu" class="active">S</a></li>\
   <li><a id="snippetor-save-action">Save</a></li>\
@@ -759,7 +775,7 @@ if (!isSnippetor) {
   <button id="snipettor-bubble-dialog-cancel">Cancel</button>\
 </div>';
 
-            document.body.innerHTML += '<ul id="snippetor-vertical-menu"></ul>';
+        document.body.innerHTML += '<ul id="snippetor-vertical-menu"></ul>';
 
         ns.uiApi.init();
 
@@ -788,9 +804,9 @@ if (!isSnippetor) {
             if (inTitle && inTitle.value) {
                 //ns.extApi.saveSnippet();
                 ns.extApi.createSnippet(inTitle.value, function() {
-                  // activate save and hide create
-                  ns.uiApi.toggleSave(true);
-                  ns.uiApi.toggleCreate(false);
+                    // activate save and hide create
+                    ns.uiApi.toggleSave(true);
+                    ns.uiApi.toggleCreate(false);
                 });
             } else {
                 snipettorCreateAction.style.disabled = true;
