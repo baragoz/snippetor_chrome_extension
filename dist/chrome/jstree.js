@@ -2,17 +2,17 @@
 (function(jQuery) {
     "use strict";
     $(document).ready(function() {
-        var snippetorExtensionApi;
+        var ns = {extApi: {}, uiApi: {}};
         var isSnippetor = (window.location.href.indexOf("http://localhost:8000") == 0);
 if (!isSnippetor) {
         window.addEventListener("onSnippetChange", function(evt) {
             var payload = evt.detail;
             if (payload.action == "save") {
-                snippetorUiApi.onSaveSnippet(payload);
+                ns.uiApi.onSaveSnippet(payload);
             } else if (payload.action == "create") {
-                snippetorUiApi.onCreateSnippet(payload);
+                ns.uiApi.onCreateSnippet(payload);
             } else if (payload.action == "open") {
-                snippetorUiApi.onOpenSnippet(payload);
+                ns.uiApi.onOpenSnippet(payload);
             } else {
                 alert("Unknow snippet action: " + payload.action);
             }
@@ -21,15 +21,15 @@ if (!isSnippetor) {
         window.addEventListener("onSnippetItemChange", function(evt) {
             var payload = evt.detail;
             if (payload.action == "add") {
-                snippetorUiApi.onAddItem(payload);
+                ns.uiApi.onAddItem(payload);
             } else if (payload.action == "remove") {
-                snippetorUiApi.onRemoveItem(payload);
+                ns.uiApi.onRemoveItem(payload);
             } else if (payload.action == "change") {
-                snippetorUiApi.onChangeItem(payload);
+                ns.uiApi.onChangeItem(payload);
             } else if (payload.action == "move") {
-                snippetorUiApi.onMoveItem(payload);
+                ns.uiApi.onMoveItem(payload);
             } else if (payload.action == "update") {
-                snippetorUiApi.onUpdateItem(payload);
+                ns.uiApi.onUpdateItem(payload);
             } else {
                 alert("Unknow snippet action: " + payload.action);
             }
@@ -57,7 +57,7 @@ if (!isSnippetor) {
                     payload: payload.data
                 }, function(response) {});
             } else if (payload.action == "GetInitialState") {
-              snippetorExtensionApi.init(function(response){
+              ns.extApi.init(function(response){
                 window.dispatchEvent(new CustomEvent("onInit", {detail: response}));
               });
 
@@ -95,9 +95,7 @@ if (!isSnippetor) {
         });
 
 
-        var snippetorUiApi;
-
-        function subscribeForTheLineDblClick() {
+      function subscribeForTheLineDblClick() {
             if (window.location.href.indexOf("https://github.com") == 0) {
                 subscribeForTheLineDblClick_GitHub();
             } else if (window.location.href.indexOf("https://cs.chromium.org") == 0) {
@@ -117,7 +115,7 @@ if (!isSnippetor) {
             function snippetorSelectHandler(e) {
                 var uid = this.id;
                 var xxx = window.location.href;
-                snippetorUiApi.showBubble(e, xxx, uid);
+                ns.uiApi.showBubble(e, xxx, uid);
             }
 
             console.log("GOT THE NUMBER OF ELEMENTS: " + elements.length);
@@ -130,9 +128,9 @@ if (!isSnippetor) {
                 }
             }
             // show bubble UI on lines availability
-            if (elements.length >0 || snippetorUiApi.showInitialBubbleRequestDone == false)
+            if (elements.length >0 || ns.uiApi.showInitialBubbleRequestDone == false)
               setTimeout(function() {
-                snippetorUiApi.showInitialBubble();
+                ns.uiApi.showInitialBubble();
               }, 200);
 
             console.log("updatedElementsCount: " + updatedElementsCount);
@@ -146,7 +144,7 @@ if (!isSnippetor) {
                 var line = parseInt(this.innerHTML);
                 var xxx = window.location.href;
                 xxx = xxx.split("?")[0];
-                snippetorUiApi.showBubble(e, xxx, line);
+                ns.uiApi.showBubble(e, xxx, line);
             }
             console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
             var updatedElementsCount = 0;
@@ -158,9 +156,9 @@ if (!isSnippetor) {
                 }
             }
             // show bubble UI on lines availability
-            if (lines.length >0 || snippetorUiApi.showInitialBubbleRequestDone == false)
+            if (lines.length >0 || ns.uiApi.showInitialBubbleRequestDone == false)
               setTimeout(function() {
-                snippetorUiApi.showInitialBubble();
+                ns.uiApi.showInitialBubble();
               }, 200);
 
             console.log("updatedElementsCount: " + updatedElementsCount);
@@ -173,7 +171,7 @@ if (!isSnippetor) {
                 var line = this.attributes["data-line-number"].value;
                 var xxx = window.location.href;
                 xxx = xxx.split("#")[0];
-                snippetorUiApi.showBubble(e, xxx, line);
+                ns.uiApi.showBubble(e, xxx, line);
             }
             console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
             var updatedElementsCount = 0;
@@ -185,9 +183,9 @@ if (!isSnippetor) {
                 }
             }
             // show bubble UI on lines availability
-            if (lines.length >0 || snippetorUiApi.showInitialBubbleRequestDone == false)
+            if (lines.length >0 || ns.uiApi.showInitialBubbleRequestDone == false)
             setTimeout(function() {
-              snippetorUiApi.showInitialBubble();
+              ns.uiApi.showInitialBubble();
             }, 200);
             console.log("updatedElementsCount: " + updatedElementsCount);
         } // subscribeForTheLineDblClick
@@ -207,7 +205,7 @@ if (!isSnippetor) {
             return element;
         }
 
-        snippetorExtensionApi = {
+        ns.extApi = {
             items: [],
             workingSnippetId: null,
             extensionWorkingItemId: null,
@@ -220,7 +218,7 @@ if (!isSnippetor) {
                     }
                 }, function(response) {
                     // get an id of the working snippet
-                    snippetorExtensionApi.workingSnippetId = response.working;
+                    ns.extApi.workingSnippetId = response.working;
                     console.log("Snippet created");
                     if (callback)
                         callback(response);
@@ -231,12 +229,12 @@ if (!isSnippetor) {
                     type: "openSnippet",
                     payload: idx
                 }, function(response) {});
-                snippetorExtensionApi.items = snippetorExtensionApi.snippetsList[idx].items;
-                snippetorExtensionApi.workingSnippetId = idx;
+                ns.extApi.items = ns.extApi.snippetsList[idx].items;
+                ns.extApi.workingSnippetId = idx;
             },
             openSnippetItem: function(id, callback) {
-                snippetorUiApi.showInitialBubbleRequestDone = false;
-                snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].workingItem = id;
+                ns.uiApi.showInitialBubbleRequestDone = false;
+                ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem = id;
 
                 chrome.runtime.sendMessage({
                     type: "openItem",
@@ -267,12 +265,12 @@ if (!isSnippetor) {
                     }
                 }, function(response) {
                     console.log("item added");
-                    snippetorExtensionApi.items.push({
+                    ns.extApi.items.push({
                         url: url,
                         line: line,
                         comment: comment
                     });
-                    snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items.push({
+                    ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.push({
                         url: url,
                         line: line,
                         comment: comment
@@ -299,25 +297,25 @@ if (!isSnippetor) {
                     console.log("snippet has been updated");
                 });
                 // change the position of old item and new item
-                var item = snippetorExtensionApi.items[payload.oldIndex];
-                snippetorExtensionApi.items.splice(payload.oldIndex, 1);
-                snippetorExtensionApi.items.splice(payload.newIndex, 0, item);
+                var item = ns.extApi.items[payload.oldIndex];
+                ns.extApi.items.splice(payload.oldIndex, 1);
+                ns.extApi.items.splice(payload.newIndex, 0, item);
 
-                snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items.splice(payload.oldIndex, 1);
-                snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items.splice(payload.newIndex, 0, item);
+                ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(payload.oldIndex, 1);
+                ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(payload.newIndex, 0, item);
             },
             closeCurrentSnippet: function() {
                 chrome.runtime.sendMessage({
                     type: "closeCurrentSnippet",
-                    payload: snippetorExtensionApi.workingSnippetId
+                    payload: ns.extApi.workingSnippetId
                 }, function(response) {
                     console.log("snippet has been unsubscribed");
                 });
                 // reset state to the IDLE
-                snippetorExtensionApi.workingSnippetId = null;
-                snippetorExtensionApi.items = [];
-                snippetorExtensionApi.extensionWorkingItemId = undefined;
-                snippetorExtensionApi.state = "idle";
+                ns.extApi.workingSnippetId = null;
+                ns.extApi.items = [];
+                ns.extApi.extensionWorkingItemId = undefined;
+                ns.extApi.state = "idle";
             },
             init: function(callback) {
                 chrome.runtime.sendMessage({
@@ -326,10 +324,10 @@ if (!isSnippetor) {
                 }, function(response) {
                     console.log("IIIIIIIIIIIIIIIII");
                     console.dir(response);
-                    snippetorExtensionApi.workingSnippetId = response.working;
-                    snippetorExtensionApi.items = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].items : [];
-                    snippetorExtensionApi.extensionWorkingItemId = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem : null;
-                    snippetorExtensionApi.snippetsList = response.snippets;
+                    ns.extApi.workingSnippetId = response.working;
+                    ns.extApi.items = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].items : [];
+                    ns.extApi.extensionWorkingItemId = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem : null;
+                    ns.extApi.snippetsList = response.snippets;
                     if (callback)
                         callback(response);
                 });
@@ -341,7 +339,7 @@ if (!isSnippetor) {
         if (isSnippetor)
           return;
 
-        snippetorUiApi = {
+        ns.uiApi = {
             bubbleElement: null,
             url: null,
             //
@@ -361,10 +359,10 @@ if (!isSnippetor) {
                         findById("snipettor-bubble-dialog-textarea").value = "";
                         console.log("SAVE BUBBLE !!!: " + that.currentItem.line)
                         if (that.currentItem.idx != undefined) {
-                          snippetorUiApi.updateItemComment(that.currentItem.idx, r);
+                          ns.uiApi.updateItemComment(that.currentItem.idx, r);
                         }
                         else {
-                          snippetorUiApi.showNewItem(that.currentItem.url, that.currentItem.line, r);
+                          ns.uiApi.showNewItem(that.currentItem.url, that.currentItem.line, r);
                         }
                         that.bubbleElement.style.display = "none";
                     });
@@ -380,14 +378,14 @@ if (!isSnippetor) {
                 return this.bubbleElement;
             },
             showInitialBubble: function() {
-              if (snippetorExtensionApi.workingSnippetId == undefined || snippetorExtensionApi.workingSnippetId == null)
+              if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
                   return;
 
               if (this.showInitialBubbleRequestDone)
                 return;
 
-              var itemIdx = snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].workingItem;
-              var item = snippetorExtensionApi.snippetsList[snippetorExtensionApi.workingSnippetId].items[itemIdx];
+              var itemIdx = ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem;
+              var item = ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[itemIdx];
               // skip bubble show on empy element
               if (!itemIdx || !item)
                 return;
@@ -450,7 +448,7 @@ if (!isSnippetor) {
             //
             showBubble: function(evt, url, line) {
                 // Do nothing if snippet was not named
-                if (snippetorExtensionApi.workingSnippetId == undefined || snippetorExtensionApi.workingSnippetId == null)
+                if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
                     return;
 
                 this.currentItem = {
@@ -466,9 +464,9 @@ if (!isSnippetor) {
             },
             updateItemComment: function(idx, comment) {
               // Do nothing if snippet was not named
-              if (snippetorExtensionApi.workingSnippetId == undefined || snippetorExtensionApi.workingSnippetId == null)
+              if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
                   return;
-              snippetorExtensionApi.updateItemComment(idx, comment);
+              ns.extApi.updateItemComment(idx, comment);
             },
             snippetsList: null,
             current_index: 0,
@@ -481,7 +479,7 @@ if (!isSnippetor) {
                 // skip subscription on init
                 console.log("ADD NEW ITEM: " + line);
                 if (!isInit)
-                    snippetorExtensionApi.addNewItem(url, line, comment);
+                    ns.extApi.addNewItem(url, line, comment);
                 if (!skipSubsciption) {
                     var navigation = document.getElementsByClassName("snippetor-navigation-item");
                     // replace on map function
@@ -490,7 +488,7 @@ if (!isSnippetor) {
                             var pl = payload;
                             return function(e) {
                                 e.stopPropagation();
-                                snippetorExtensionApi.openSnippetItem(pl);
+                                ns.extApi.openSnippetItem(pl);
                             };
                         })(v));
                     }
@@ -498,7 +496,7 @@ if (!isSnippetor) {
                     SnippetSortable.create(this.snippetsList, {
                         delay: 100,
                         onEnd: function(evt) {
-                            snippetorExtensionApi.moveIndex({
+                            ns.extApi.moveIndex({
                                 oldIndex: evt.oldIndex,
                                 newIndex: evt.newIndex
                             });
@@ -510,31 +508,31 @@ if (!isSnippetor) {
                 console.log("Show new item: " + url);
             },
             init: function() {
-                snippetorExtensionApi.init(function() {
-                    if (snippetorExtensionApi.workingSnippetId != null && snippetorExtensionApi.workingSnippetId != undefined) {
-                        snippetorUiApi.refreshItemsUiList();
-                        snippetorUiApi.toggleSave(true);
-                        snippetorUiApi.toggleCreate(false);
-                        //snippetorUiApi.showInitialBubble();
+                ns.extApi.init(function() {
+                    if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
+                        ns.uiApi.refreshItemsUiList();
+                        ns.uiApi.toggleSave(true);
+                        ns.uiApi.toggleCreate(false);
+                        //ns.uiApi.showInitialBubble();
 
                     } else {
-                        snippetorUiApi.toggleSave(false);
-                        snippetorUiApi.toggleCreate(false);
+                        ns.uiApi.toggleSave(false);
+                        ns.uiApi.toggleCreate(false);
                     }
 
-                    snippetorUiApi.toggleVMenu(false);
+                    ns.uiApi.toggleVMenu(false);
                     //
                     // Work-around for a S-menu toggle: we need to toggle vertical when user do nothing with snippet
                     // and horizontal otherwise.
                     // So we need to minimize menu on start in case which described above
                     //
-                    if (snippetorExtensionApi.workingSnippetId == null && snippetorExtensionApi.workingSnippetId == undefined) {
+                    if (ns.extApi.workingSnippetId == null && ns.extApi.workingSnippetId == undefined) {
                         if (!isSnippetor) {
                             snippetorToggleAction.style.width = "42px";
                             snippetorToggleAction.style.height = "49px";
                         }
                     }
-                    snippetorUiApi.refreshVertMenu();
+                    ns.uiApi.refreshVertMenu();
                 });
             },
             refreshVertMenu: function() {
@@ -545,15 +543,15 @@ if (!isSnippetor) {
                     // Empty previous value
                     vertMenu.innerHTML = '<li><a id="snipettor-create-item">Create</a></li>';
 
-                    for (var t in snippetorExtensionApi.snippetsList) {
-                        var snippet = snippetorExtensionApi.snippetsList[t];
+                    for (var t in ns.extApi.snippetsList) {
+                        var snippet = ns.extApi.snippetsList[t];
                         if (snippet) {
                             vertMenu.innerHTML += '<li><a snippet_item="' + t + '" class="snipettor-select-menu-item">' + (snippet.title || 'no title') + '</a></li>';
                         }
                     }
                     findById("snipettor-create-item", "click", function(e) {
-                        snippetorUiApi.toggleCreate(true);
-                        snippetorUiApi.toggleVMenu(false);
+                        ns.uiApi.toggleCreate(true);
+                        ns.uiApi.toggleVMenu(false);
                         // hide top line
                         findById("menu-dddd").dispatchEvent(new Event("click"));
                     });
@@ -563,7 +561,7 @@ if (!isSnippetor) {
                         snippetDrafts[x].addEventListener("click", function(e) {
                             var index = parseInt(this.attributes["snippet_item"].value);
                             console.log("ITEM IS:" + index);
-                            snippetorUiApi.openSnippet(index);
+                            ns.uiApi.openSnippet(index);
                         });
                     }
                 } // vertical menu
@@ -576,24 +574,24 @@ if (!isSnippetor) {
                     return;
                 var snippetsList = findById("menu-snippets-list");
                 snippetsList.innerHTML = '';
-                if (snippetorExtensionApi.workingSnippetId != null && snippetorExtensionApi.workingSnippetId != undefined) {
-                    for (var x in snippetorExtensionApi.items) {
+                if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
+                    for (var x in ns.extApi.items) {
                         console.log("POST INIT: []" + x);
-                        var tmp = snippetorExtensionApi.items[x];
-                        snippetorUiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false);
+                        var tmp = ns.extApi.items[x];
+                        ns.uiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false);
                     }
                 }
             },
             openSnippet: function(idx) {
                 // open top menu on save mode
-                snippetorUiApi.toggleSave(true);
-                snippetorUiApi.toggleCreate(false);
-                snippetorUiApi.toggleVMenu(false);
+                ns.uiApi.toggleSave(true);
+                ns.uiApi.toggleCreate(false);
+                ns.uiApi.toggleVMenu(false);
 
 
-                snippetorExtensionApi.openSnippet(idx);
+                ns.extApi.openSnippet(idx);
                 // refresh snippets on open
-                snippetorUiApi.refreshItemsUiList();
+                ns.uiApi.refreshItemsUiList();
 
                 // hide top line
                 findById("menu-dddd").dispatchEvent(new Event("click"));
@@ -603,15 +601,15 @@ if (!isSnippetor) {
                 findById("menu-dddd").dispatchEvent(new Event("click"));
 
                 // hide all menus
-                snippetorUiApi.toggleSave(false);
-                snippetorUiApi.toggleCreate(false);
-                snippetorUiApi.toggleVMenu(false);
+                ns.uiApi.toggleSave(false);
+                ns.uiApi.toggleCreate(false);
+                ns.uiApi.toggleVMenu(false);
 
                 this.snippetsList = findById("menu-snippets-list");
                 this.snippetsList.innerHTML = "";
                 if (this.bubbleElement)
                     this.bubbleElement.style.display = "none";
-                snippetorExtensionApi.closeCurrentSnippet();
+                ns.extApi.closeCurrentSnippet();
             },
             toggleVMenu: function(flag) {
                 if (isSnippetor)
@@ -629,7 +627,7 @@ if (!isSnippetor) {
                 saveIt.style.display = flag ? "block" : "none";
                 // working state
                 if (flag)
-                    snippetorExtensionApi.state = "edit";
+                    ns.extApi.state = "edit";
             },
             toggleCreate: function(flag) {
                 if (isSnippetor)
@@ -640,7 +638,7 @@ if (!isSnippetor) {
                 inputWrapper.style.display = flag ? "block" : "none";
                 // waiting for craete
                 if (flag)
-                    snippetorExtensionApi.state = "create";
+                    ns.extApi.state = "create";
                 else {
                     console.log(inputWrapper);
                     inputWrapper.value = "";
@@ -656,11 +654,11 @@ if (!isSnippetor) {
             //
             onSaveSnippet: function(payload) {
                 console.log("SAVE SNIPPET HANDLE WIT CLOSE ");
-                if (payload.working == snippetorExtensionApi.workingSnippetId) {
+                if (payload.working == ns.extApi.workingSnippetId) {
                     this.closeCurrentSnippet();
                 }
                 // Remove snippet from the menu list, because it is not draft anymore
-                snippetorExtensionApi.snippetsList[payload.working] = null;
+                ns.extApi.snippetsList[payload.working] = null;
                 this.refreshVertMenu();
 
             },
@@ -669,14 +667,14 @@ if (!isSnippetor) {
             //
             onCreateSnippet: function(payload) {
                 // refresh the list of snippets in the menu
-                snippetorExtensionApi.snippetsList[payload.working] = payload.snippet;
+                ns.extApi.snippetsList[payload.working] = payload.snippet;
                 this.refreshVertMenu();
             },
             onOpenSnippet: function(payload) {
                 // refresh the list of snippets in the menu
                 // TODO: split draft snippets and opened snippets
-                if (payload.working != snippetorExtensionApi.workingSnippetId) {
-                    snippetorExtensionApi.snippetsList[payload.working] = payload.snippet;
+                if (payload.working != ns.extApi.workingSnippetId) {
+                    ns.extApi.snippetsList[payload.working] = payload.snippet;
                     this.refreshVertMenu();
                 }
             },
@@ -686,57 +684,57 @@ if (!isSnippetor) {
             //
             ///////////////////////////////////////////////
             onAddItem: function(payload) {
-                snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.index, 0, payload.item);
-                snippetorExtensionApi.items.splice(payload.index, 0, payload.item);
+                ns.extApi.snippetsList[payload.working].items.splice(payload.index, 0, payload.item);
+                ns.extApi.items.splice(payload.index, 0, payload.item);
                 // update snippet item UI if it was current item
-                if (payload.working == snippetorExtensionApi.workingSnippetId) {
+                if (payload.working == ns.extApi.workingSnippetId) {
                     // add to the end of the existing list
-                    if (payload.index == snippetorExtensionApi.snippetsList[payload.working].items.length - 1) {
+                    if (payload.index == ns.extApi.snippetsList[payload.working].items.length - 1) {
                         this.showNewItem(payload.item.url, payload.item.line, payload.item.comment, true, false);
                     } else {
                         // inser into the middle therefore we need to refresh list
-                        snippetorUiApi.refreshItemsUiList();
+                        ns.uiApi.refreshItemsUiList();
                     }
                 }
             },
             onUpdateItem: function(payload) {
               // update value
-              snippetorExtensionApi.snippetsList[payload.working].items[payload.payload.idx].comment = payload.payload.item.comment;
-              snippetorExtensionApi.items[payload.payload.idx].comment = payload.payload.item.comment;
+              ns.extApi.snippetsList[payload.working].items[payload.payload.idx].comment = payload.payload.item.comment;
+              ns.extApi.items[payload.payload.idx].comment = payload.payload.item.comment;
               // TODO: update bubbleUI
             },
             onMoveItem: function(payload) {
                 console.dir(payload);
-                console.dir(snippetorExtensionApi.snippetsList);
-                console.dir(snippetorExtensionApi.items);
+                console.dir(ns.extApi.snippetsList);
+                console.dir(ns.extApi.items);
                 // Update snipettor cached data
-                var item = snippetorExtensionApi.snippetsList[payload.working].items[payload.payload.oldIndex];
+                var item = ns.extApi.snippetsList[payload.working].items[payload.payload.oldIndex];
                 console.dir(item);
-                snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.payload.oldIndex, 1);
-                snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.payload.newIndex, 0, item);
+                ns.extApi.snippetsList[payload.working].items.splice(payload.payload.oldIndex, 1);
+                ns.extApi.snippetsList[payload.working].items.splice(payload.payload.newIndex, 0, item);
 
                 // update snippet item UI if it was current item
-                if (payload.working == snippetorExtensionApi.workingSnippetId) {
+                if (payload.working == ns.extApi.workingSnippetId) {
                     // swap status if it is the same items
-                    snippetorExtensionApi.items.splice(payload.payload.oldIndex, 1);
-                    snippetorExtensionApi.items.splice(payload.payload.newIndex, 0, item);
-                    console.dir(snippetorExtensionApi.items);
+                    ns.extApi.items.splice(payload.payload.oldIndex, 1);
+                    ns.extApi.items.splice(payload.payload.newIndex, 0, item);
+                    console.dir(ns.extApi.items);
                     // inser into the middle therefore we need to refresh list
-                    snippetorUiApi.refreshItemsUiList();
+                    ns.uiApi.refreshItemsUiList();
                 }
             },
             onRemoveItem: function(payload) {
-              snippetorExtensionApi.snippetsList[payload.working].items.splice(payload.payload.index, 1);
-              if (payload.working == snippetorExtensionApi.workingSnippetId) {
-                snippetorExtensionApi.items.splice(payload.payload.index, 1);
-                snippetorUiApi.refreshItemsUiList();
+              ns.extApi.snippetsList[payload.working].items.splice(payload.payload.index, 1);
+              if (payload.working == ns.extApi.workingSnippetId) {
+                ns.extApi.items.splice(payload.payload.index, 1);
+                ns.uiApi.refreshItemsUiList();
                 console.log("TODO: check if it bubble dialog is opened");
               }
             },
             onUpdateItem: function(payload) {
-              snippetorExtensionApi.snippetsList[payload.working].items[payload.payload.index] = payload.item;
-              if (payload.working == snippetorExtensionApi.workingSnippetId) {
-                snippetorExtensionApi.items[payload.payload.index] = payload.item;
+              ns.extApi.snippetsList[payload.working].items[payload.payload.index] = payload.item;
+              if (payload.working == ns.extApi.workingSnippetId) {
+                ns.extApi.items[payload.payload.index] = payload.item;
                 console.log("TODO: check if it bubble dialog is opened");
               }
             }
@@ -763,17 +761,17 @@ if (!isSnippetor) {
 
             document.body.innerHTML += '<ul id="snippetor-vertical-menu"></ul>';
 
-        snippetorUiApi.init();
+        ns.uiApi.init();
 
         // Close icon
         var snippetorCloseAction = findById("snipettor-close-action", "click", function(e) {
             e.stopPropagation();
-            snippetorUiApi.closeCurrentSnippet();
+            ns.uiApi.closeCurrentSnippet();
         }); // On click handler
 
         var saveAction = findById("snippetor-save-action", "click", function(e) {
             e.stopPropagation();
-            snippetorExtensionApi.saveSnippet();
+            ns.extApi.saveSnippet();
         });
 
         var snippetTitle = findById("snippetor-input-action-wrapper", "click", function(e) {
@@ -785,15 +783,14 @@ if (!isSnippetor) {
         });
 
         var snipettorCreateAction = findById("snippetor-create-action", "click", function(e) {
-            console.log("CLICKED ON CREATE: ");
             e.stopPropagation();
             var inTitle = findById("snippetor-input-action");
             if (inTitle && inTitle.value) {
-                //snippetorExtensionApi.saveSnippet();
-                snippetorExtensionApi.createSnippet(inTitle.value, function() {
+                //ns.extApi.saveSnippet();
+                ns.extApi.createSnippet(inTitle.value, function() {
                   // activate save and hide create
-                  snippetorUiApi.toggleSave(true);
-                  snippetorUiApi.toggleCreate(false);
+                  ns.uiApi.toggleSave(true);
+                  ns.uiApi.toggleCreate(false);
                 });
             } else {
                 snipettorCreateAction.style.disabled = true;
@@ -802,10 +799,10 @@ if (!isSnippetor) {
 
         // Show/hide top menu
         var snippetorToggleAction = findById("menu-dddd", "click", function(e) {
-            if (snippetorExtensionApi.state == "idle") {
-                snippetorUiApi.toggleVMenu();
+            if (ns.extApi.state == "idle") {
+                ns.uiApi.toggleVMenu();
             } else {
-                snippetorUiApi.toggleVMenu(false);
+                ns.uiApi.toggleVMenu(false);
                 //var rrr = document.getElementById("menu-dddd");
                 snippetorToggleAction.style.height = "49px";
                 if (snippetorToggleAction.style.width == "42px")
