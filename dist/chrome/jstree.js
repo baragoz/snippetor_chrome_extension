@@ -17,6 +17,8 @@
                     ns.uiApi.onCreateSnippet(payload);
                 } else if (payload.action == "open") {
                     ns.uiApi.onOpenSnippet(payload);
+                } else if (payload.action == "edit-state") {
+                    ns.uiApi.onEditStateSnippet(payload);
                 } else {
                     alert("Unknow snippet action: " + payload.action);
                 }
@@ -76,6 +78,13 @@
                     console.log("snippet has been unsubscribed. TODO: send a feedback message");
                 });
 
+            } else if (payload.action == "edit-current-snippet") {
+                chrome.runtime.sendMessage({
+                    type: "editCurrentSnippet",
+                    payload: payload.payload
+                }, function(response) {
+                    console.log("snippet edit state has been updated");
+                });
             } else if (payload.action == "select-snippet") {} else if (payload.action == "update-snippet-item") {
                 chrome.runtime.sendMessage({
                     type: "updateItem",
@@ -227,7 +236,8 @@
                 chrome.runtime.sendMessage({
                     type: "createSnippet",
                     payload: {
-                        title: title
+                        title: title,
+                        isModified: true
                     }
                 }, function(response) {
                     // get an id of the working snippet
@@ -528,12 +538,13 @@
                 ns.extApi.init(function() {
                     if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
                         ns.uiApi.refreshItemsUiList();
-                        ns.uiApi.toggleSave(true);
+                        // Force change
+                        var isMod = ns.extApi.snippetsList[ns.extApi.workingSnippetId].isModified;
+                        console.log("IS MODIFIED ? " + isMod);
+                        ns.uiApi.toggleSave(isMod, !isMod);
                         ns.uiApi.toggleCreate(false);
-                        //ns.uiApi.showInitialBubble();
-
                     } else {
-                        ns.uiApi.toggleSave(false);
+                        ns.uiApi.toggleSave(false, false);
                         ns.uiApi.toggleCreate(false);
                     }
 
@@ -551,6 +562,19 @@
                     }
                     ns.uiApi.refreshVertMenu();
                 });
+            },
+            //
+            // Change an edit mode of the opened snippet
+            //
+            changeEditMode: function(isModified) {
+              if (isModified) {
+                $("#snippetor-edit-action").hide();
+                $("#snippetor-save-action").show();
+              }
+              else {
+                $("#snippetor-edit-action").show();
+                $("#snippetor-save-action").hide();
+              }
             },
             refreshVertMenu: function() {
                 if (isSnippetor)
@@ -592,6 +616,10 @@
                 var snippetsList = findById("menu-snippets-list");
                 snippetsList.innerHTML = '';
                 if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
+                    // update according to the modified state
+                    var isMod = ns.extApi.snippetsList[ns.extApi.workingSnippetId].isModified;
+                    ns.uiApi.toggleSave(isMod, !isMod);
+                    // Add all snippet items
                     for (var x in ns.extApi.items) {
                         console.log("POST INIT: []" + x);
                         var tmp = ns.extApi.items[x];
@@ -601,7 +629,6 @@
             },
             openSnippet: function(idx) {
                 // open top menu on save mode
-                ns.uiApi.toggleSave(true);
                 ns.uiApi.toggleCreate(false);
                 ns.uiApi.toggleVMenu(false);
 
@@ -617,7 +644,7 @@
                 findById("menu-dddd").dispatchEvent(new Event("click"));
 
                 // hide all menus
-                ns.uiApi.toggleSave(false);
+                ns.uiApi.toggleSave(false, false);
                 ns.uiApi.toggleCreate(false);
                 ns.uiApi.toggleVMenu(false);
 
@@ -638,13 +665,16 @@
                 }
                 vertMenu.style.display = flag ? "block" : "none";
             },
-            toggleSave: function(flag) {
+            toggleSave: function(flag, f2) {
                 if (isSnippetor)
                     return;
                 var saveIt = findById("snippetor-save-action");
                 saveIt.style.display = flag ? "block" : "none";
+
+                var editS = findById("snippetor-edit-action");
+                editS.style.display = f2 ? "block" : "none";
                 // working state
-                if (flag)
+                if (flag || f2)
                     ns.extApi.state = "edit";
             },
             toggleCreate: function(flag) {
@@ -689,11 +719,21 @@
                 ns.extApi.snippetsList[payload.working] = payload.snippet;
                 this.refreshVertMenu();
             },
+            onEditStateSnippet: function(payload) {
+              ns.extApi.snippetsList[payload.working].isModified = payload.isModified;
+
+              if (payload.working == ns.extApi.workingSnippetId) {
+                var isMod = payload.isModified ? true : false;
+                ns.uiApi.toggleSave(isMod, !isMod);
+                //this.changeEditMode(payload.isModified);
+              }
+            },
             onOpenSnippet: function(payload) {
                 // refresh the list of snippets in the menu
                 // TODO: split draft snippets and opened snippets
                 if (payload.working != ns.extApi.workingSnippetId) {
                     ns.extApi.snippetsList[payload.working] = payload.snippet;
+                    // refresh vertical menu items
                     this.refreshVertMenu();
                 }
             },
@@ -762,7 +802,8 @@
         $('\
 <ul id="menu-dddd">\
   <li><a id="snippetor-toggle-menu" class="active">S</a></li>\
-  <li><a id="snippetor-save-action">Save</a></li>\
+  <li><a id="snippetor-save-action" style="display:none;">Save</a></li>\
+  <li><a id="snippetor-edit-action" style="display:none;">Edit</a></li>\
 	<li><a id="snippetor-create-action" >Create</a></li>\
 	<li><a id="snippetor-input-action-wrapper"><input id="snippetor-input-action" placeholder="Draft name please ..."></a></li>\
 	<ul id="menu-snippets-list">\
@@ -808,7 +849,7 @@
                 //ns.extApi.saveSnippet();
                 ns.extApi.createSnippet(inTitle.value, function() {
                     // activate save and hide create
-                    ns.uiApi.toggleSave(true);
+                    ns.uiApi.toggleSave(true, false);
                     ns.uiApi.toggleCreate(false);
                 });
             } else {

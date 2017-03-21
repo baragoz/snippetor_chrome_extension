@@ -191,6 +191,7 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
             workingEnvironment[sender.tab.id] = snippetsList.length;
             snippetsList.push({
                 title: payload.title,
+                isModified: payload.isModified,
                 items: []
             });
             sendRes({
@@ -209,6 +210,17 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
         },
         closeCurrentSnippet: function(data) {
             workingEnvironment[sender.tab.id] = null;
+        },
+        editCurrentSnippet: function(data) {
+          var pos = workingEnvironment[sender.tab.id];
+          if (pos == null || pos < 0)
+            return;
+
+          this._broadcastTabs(-1, "onSnippetChange", {
+                action: "edit-state",
+                working: pos,
+                isModified: true
+          });
         },
         _broadcastTabs: function(senderId, action, payload) {
             var code = "window.dispatchEvent(new CustomEvent(\"" + action + "\", {detail: " + JSON.stringify(payload) + "}));";
