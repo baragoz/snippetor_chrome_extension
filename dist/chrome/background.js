@@ -120,8 +120,13 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
                 snippetsList.push(payload);
 
             if (payload && payload.items) {
+                var url = payload.items[0].url;
+                if (url.indexOf("https://cs.chromium.org") == 0)
+                  url = url + "?l=" + payload.items[0].line;
+                if (url.indexOf("https://github.com") == 0)
+                    url = url + "#L" + payload.items[0].line;
                 chrome.tabs.create({
-                    'url': payload.items[0].url + "#L" + payload.items[0].line,
+                    'url': url,
                     active: true
                 }, function(tab) {
                     workingEnvironment[tab.id] = pos;
