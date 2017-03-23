@@ -389,7 +389,7 @@
                         if (that.currentItem.idx != undefined) {
                             ns.uiApi.updateItemComment(that.currentItem.idx, r);
                         } else {
-                            ns.uiApi.showNewItem(that.currentItem.url, that.currentItem.line, r);
+                            ns.uiApi.showNewItem(that.currentItem.url, that.currentItem.line, r, false, false, true);
                         }
                         that.bubbleElement.style.display = "none";
                     });
@@ -418,6 +418,8 @@
                 // skip bubble show on empy element
                 if (itemIdx == undefined  || item == undefined)
                     return;
+                // Handle navigation
+                this._NextPrevHelper(true, true);
 
                 if (item.url.indexOf("https://github.com/") == 0) {
                     var line = findById("L" + item.line);
@@ -469,12 +471,44 @@
                     // Cache current item index
                     this.currentItem = item;
                     this.currentItem.idx = itemIdx;
+
                     // Handle UI element position
                     var bubbleElement = this._getBubbleUi();
                     bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
                     bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
                     bubbleElement.style.display = "block";
                 }
+            },
+            _NextPrevHelper: function(isSavedItem, isInitial) {
+              // Handle Next/Prev elements visibility
+              var next_element = findById("snipettor-bubble-dialog-next"),
+                  prev_element = findById("snipettor-bubble-dialog-prev");
+                              if (isSavedItem) {
+                                next_element.style.display = "block";
+                                next_element.disabled = (ns.extApi.extensionWorkingItemId == ns.extApi.items.length -1);
+                                prev_element.style.display = "block";
+                                prev_element.disabled = (ns.extApi.extensionWorkingItemId <= 0);
+                              }
+                              else {
+                                next_element.style.display = "none";
+                                prev_element.style.display = "none";
+                              }
+                  if (isInitial) {
+                    findById("snipettor-bubble-dialog-next", "click", function(e) {
+                      e.stopPropagation();
+                      if (ns.extApi.extensionWorkingItemId < ns.extApi.items.length -1) {
+                        ns.extApi.extensionWorkingItemId++
+                        ns.extApi.openSnippetItem(ns.extApi.extensionWorkingItemId);
+                      }
+                    });
+                    findById("snipettor-bubble-dialog-prev", "click", function(e) {
+                      e.stopPropagation();
+                      if (ns.extApi.extensionWorkingItemId > 0) {
+                        ns.extApi.extensionWorkingItemId--;
+                        ns.extApi.openSnippetItem(ns.extApi.extensionWorkingItemId);
+                      }
+                    });
+                  }
             },
             //
             // Show input bubble at UI position
@@ -488,6 +522,8 @@
                     url: url,
                     line: line
                 };
+
+                this._NextPrevHelper(false);
 
                 var bubbleElement = this._getBubbleUi();
                 bubbleElement.style.top = (evt.pageY + 20) + "px";
@@ -503,12 +539,20 @@
             },
             snippetsList: null,
             current_index: 0,
-            showNewItem: function(url, line, comment, isInit, skipSubsciption) {
+            showNewItem: function(url, line, comment, isInit, skipSubsciption, isActive) {
                 this.current_index++;
+                //
+                // Hide previous active items
+                //
+                if (isActive) {
+                  var activeItems = document.getElementsByClassName("snipettor-active-menu-item");
+                  for (var i=0; i< activeItems.length; ++i)
+                    activeItems[i].classList.remove("snipettor-active-menu-item");
+                }
 
                 var payload = url.length > 20 ? url.substr(url.length - 20) : url;
                 this.snippetsList = findById("menu-snippets-list");
-                this.snippetsList.innerHTML += '<li><a class="snippetor-navigation-item" aria-label="' + url + '" id="snippetor-active-item-' + this.current_index + '">' + payload + ':' + line + '</a></li>';
+                this.snippetsList.innerHTML += '<li><a class="snippetor-navigation-item '+ (isActive ? "snipettor-active-menu-item" : "")+ '" aria-label="' + url + '" id="snippetor-active-item-' + this.current_index + '">' + payload + ':' + line + '</a></li>';
                 // skip subscription on init
                 console.log("ADD NEW ITEM: " + line);
                 if (!isInit)
@@ -629,7 +673,8 @@
                     for (var x in ns.extApi.items) {
                         console.log("POST INIT: []" + x);
                         var tmp = ns.extApi.items[x];
-                        ns.uiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false);
+                        var isActive = x == ns.extApi.extensionWorkingItemId;
+                        ns.uiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false, isActive);
                     }
                 }
             },

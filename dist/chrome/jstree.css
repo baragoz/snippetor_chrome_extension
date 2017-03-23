@@ -1,3 +1,7 @@
+.snipettor-active-menu-item {
+  background-color: rgb(247, 183, 51);
+}
+
 #snipettor-bubble-dialog {
   position: absolute;
   background-color: grey;
