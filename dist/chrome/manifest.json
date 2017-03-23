@@ -12,8 +12,8 @@
     "https://github.com/*",
     "https://gitlab.com/*",
     "https://cs.chromium.org/*",
-    "http://localhost:3000/*",
-    "http://localhost:8000/*",
+    "https://umlsync-6e2da.firebaseapp.com/*",
+    "https://snipettor.firebaseapp.com/*",
     "storage"
   ],
   "optional_permissions": [

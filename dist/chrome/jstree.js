@@ -7,7 +7,7 @@
             extApi: {},
             uiApi: {}
         };
-        var isSnippetor = (window.location.href.indexOf("http://localhost:8000") == 0);
+        var isSnippetor = (window.location.href.indexOf("http://localhost:8000") == 0 || window.location.href.indexOf("https://snipettor.firebaseapp.com") == 0);
         if (!isSnippetor) {
             window.addEventListener("onSnippetChange", function(evt) {
                 var payload = evt.detail;
@@ -117,7 +117,7 @@
                 setTimeout(function() {
                     subscribeForTheLineDblClick_GoogleCodeSearch();
                 }, 1200);
-            } else if (window.location.href.indexOf("http://localhost:3000") == 0) {
+            } else if (window.location.href.indexOf("https://umlsync-6e2da.firebaseapp.com") == 0) {
                 setTimeout(function() {
                     subscribeForTheLineDblClick_UML();
                 }, 1200);
@@ -416,12 +416,15 @@
                 var itemIdx = ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem;
                 var item = ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[itemIdx];
                 // skip bubble show on empy element
-                if (!itemIdx || !item)
+                if (itemIdx == undefined  || item == undefined)
                     return;
 
-                console.log("HREF IS : " + item.url);
                 if (item.url.indexOf("https://github.com/") == 0) {
                     var line = findById("L" + item.line);
+                    console.log("GOT LINE ???? ");
+                    console.dir(line);
+                    if (!line)
+                      return;
 
                     this.showInitialBubbleRequestDone = true;
                     var absPos = line.getBoundingClientRect();
@@ -436,10 +439,6 @@
                     bubbleElement.style.display = "block";
                 } else if (item.url.indexOf("https://cs.chromium.org/") == 0) {
                     var line = findById("n" + item.line);
-                    console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
-                    console.dir(line);
-
-
                     this.showInitialBubbleRequestDone = true;
                     var absPos = line.getBoundingClientRect();
                     console.dir(absPos);
@@ -451,11 +450,18 @@
                     bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
                     bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
                     bubbleElement.style.display = "block";
-                } else if (item.url.indexOf("http://localhost:3000/") == 0) {
+                } else if (item.url.indexOf("https://umlsync-6e2da.firebaseapp.com") == 0) {
                     var line = findById(item.line);
-                    console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
+                    console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL: " + item.line);
                     console.dir(line);
 
+                    if (!line) {
+                      var that = this;
+                      setTimeout(function() {
+                        that.showInitialBubble();
+                      }, 1000);
+                      return;
+                    }
 
                     this.showInitialBubbleRequestDone = true;
                     var absPos = line.getBoundingClientRect();
@@ -833,6 +839,12 @@
             e.stopPropagation();
             ns.extApi.saveSnippet();
         });
+
+        var editAction = findById("snippetor-edit-action", "click", function(e) {
+            e.stopPropagation();
+            ns.extApi.saveSnippet();
+        });
+
 
         var snippetTitle = findById("snippetor-input-action-wrapper", "click", function(e) {
             e.stopPropagation();

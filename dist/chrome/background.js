@@ -152,7 +152,7 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
         // Save current snippet request
         //
         saveSnippet: function gotReportFromTheTab(data) {
-            var snipettorURL = "http://localhost:8000";
+            var snipettorURL = "https://snipettor.firebaseapp.com";
             var pos = workingEnvironment[sender.tab.id];
             if (pos != undefined && pos >= 0) {
                 chrome.tabs.create({
