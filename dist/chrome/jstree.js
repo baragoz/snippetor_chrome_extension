@@ -117,6 +117,10 @@
                 setTimeout(function() {
                     subscribeForTheLineDblClick_GoogleCodeSearch();
                 }, 1200);
+            }  else if (window.location.href.indexOf("https://bitbucket.org") == 0) {
+                setTimeout(function() {
+                    subscribeForTheLineDblClick_Bitbucket();
+                }, 1200);
             } else if (window.location.href.indexOf("https://umlsync-6e2da.firebaseapp.com") == 0) {
                 setTimeout(function() {
                     subscribeForTheLineDblClick_UML();
@@ -204,6 +208,37 @@
                 }, 200);
             console.log("updatedElementsCount: " + updatedElementsCount);
         } // subscribeForTheLineDblClick
+
+        function subscribeForTheLineDblClick_Bitbucket() {
+            var wrapper = document.getElementsByClassName("linenodiv");
+            if (wrapper.length == 0 || wrapper[0].childNodes.length == 0)
+              return;
+            var pre = wrapper[0].childNodes[0];
+            var lines = pre.childNodes;
+
+            function snippetorSelectHandler(e) {
+                var line = this.innerHTML;
+                var xxx = window.location.href;
+                xxx = xxx.split("#")[0];
+                ns.uiApi.showBubble(e, xxx, line);
+            }
+            console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
+            var updatedElementsCount = 0;
+            for (var idx = 0; idx < lines.length; ++idx) {
+                if (!lines[idx].classList || !lines[idx].classList.contains("snipettor-event-observer")) {
+                    ++updatedElementsCount;
+                    lines[idx].className += " snipettor-event-observer";
+                    lines[idx].addEventListener('dblclick', snippetorSelectHandler);
+                }
+            }
+            // show bubble UI on lines availability
+            if (lines.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
+                setTimeout(function() {
+                    ns.uiApi.showInitialBubble();
+                }, 200);
+            console.log("updatedElementsCount: " + updatedElementsCount);
+        } // subscribeForTheLineDblClick
+
         window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
         window.addEventListener("load", function() {
             subscribeForTheLineDblClick();
