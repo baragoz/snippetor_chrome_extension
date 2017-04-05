@@ -125,6 +125,8 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
                   url = url + "?l=" + payload.items[0].line;
                 if (url.indexOf("https://github.com") == 0)
                     url = url + "#L" + payload.items[0].line;
+                if (url.indexOf("https://bitbucket.org") == 0)
+                    url = url + "?fileviewer=file-view-default#-" + payload.items[0].line;
                 chrome.tabs.create({
                     'url': url,
                     active: true

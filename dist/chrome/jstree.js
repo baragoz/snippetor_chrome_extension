@@ -219,7 +219,7 @@
             function snippetorSelectHandler(e) {
                 var line = this.innerHTML;
                 var xxx = window.location.href;
-                xxx = xxx.split("#")[0];
+                xxx = xxx.split("?")[0];
                 ns.uiApi.showBubble(e, xxx, line);
             }
             console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
@@ -463,6 +463,36 @@
                     if (!line)
                       return;
 
+                    this.showInitialBubbleRequestDone = true;
+                    var absPos = line.getBoundingClientRect();
+                    console.dir(line);
+                    // Cache current item position
+                    this.currentItem = item;
+                    this.currentItem.idx = itemIdx;
+                    // Handle UI element position
+                    var bubbleElement = this._getBubbleUi();
+                    bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
+                    bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
+                    bubbleElement.style.display = "block";
+                } else if (item.url.indexOf("https://bitbucket.org") == 0) {
+///////////////////////// TODO: make a dedicated classes for lines search
+            // Unfortunatly bitbucket do not have any correct identifier of each line
+            var wrapper = document.getElementsByClassName("linenodiv");
+            // Get an acccess to all available lines
+            if (wrapper.length == 0 || wrapper[0].childNodes.length == 0)
+              return;
+              
+            var pre = wrapper[0].childNodes[0];
+            // check if lines a loaded
+            if (!pre || pre.length == 0)
+              return;
+            var line = pre.childNodes[(item.line-1)*2];
+
+            if (!line || !line.innerHTML || parseInt(line.innerHTML) != item.line) {
+			  // Nothing loaded yet or something wrong with bitbucket structure
+              return;
+		    }
+/////////////////////////
                     this.showInitialBubbleRequestDone = true;
                     var absPos = line.getBoundingClientRect();
                     console.dir(line);
