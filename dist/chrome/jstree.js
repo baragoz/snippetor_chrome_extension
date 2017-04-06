@@ -110,134 +110,152 @@
         });
 
 
+        var siteHandlers;
+
         function subscribeForTheLineDblClick() {
-            if (window.location.href.indexOf("https://github.com") == 0) {
-                subscribeForTheLineDblClick_GitHub();
-            } else if (window.location.href.indexOf("https://cs.chromium.org") == 0) {
-                setTimeout(function() {
-                    subscribeForTheLineDblClick_GoogleCodeSearch();
-                }, 1200);
-            }  else if (window.location.href.indexOf("https://bitbucket.org") == 0) {
-                setTimeout(function() {
-                    subscribeForTheLineDblClick_Bitbucket();
-                }, 1200);
-            } else if (window.location.href.indexOf("https://umlsync-6e2da.firebaseapp.com") == 0) {
-                setTimeout(function() {
-                    subscribeForTheLineDblClick_UML();
-                }, 1200);
-            }
-        }
+			//
+			// Make a subscription via concreate site handler
+			// but subscription method is common for all sites
+			//
+            function snippetorSubscribeFunction(siteHandler) {
+              var lines = siteHandler.getLines();
+              var updatedElementsCount = 0;
 
-        function subscribeForTheLineDblClick_UML() {
-            var elements = document.getElementsByClassName("us-element-border");
-
-            function snippetorSelectHandler(e) {
-                var uid = this.id;
-                var xxx = window.location.href;
-                ns.uiApi.showBubble(e, xxx, uid);
-            }
-
-            console.log("GOT THE NUMBER OF ELEMENTS: " + elements.length);
-            var updatedElementsCount = 0;
-            for (var idx = 0; idx < elements.length; ++idx) {
-                if (!elements[idx].classList.contains("snipettor-event-observer")) {
-                    ++updatedElementsCount;
-                    elements[idx].className += " snipettor-event-observer";
-                    elements[idx].addEventListener('dblclick', snippetorSelectHandler);
-                }
-            }
-            // show bubble UI on lines availability
-            if (elements.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
-                setTimeout(function() {
-                    ns.uiApi.showInitialBubble();
-                }, 200);
-
-            console.log("updatedElementsCount: " + updatedElementsCount);
-        }
-
-
-        function subscribeForTheLineDblClick_GoogleCodeSearch() {
-            var lines = document.getElementsByClassName("lineNumber");
-
-            function snippetorSelectHandler(e) {
-                var line = parseInt(this.innerHTML);
-                var xxx = window.location.href;
-                xxx = xxx.split("?")[0];
-                ns.uiApi.showBubble(e, xxx, line);
-            }
-            console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
-            var updatedElementsCount = 0;
-            for (var idx = 0; idx < lines.length; ++idx) {
-                if (!lines[idx].classList.contains("snipettor-event-observer")) {
-                    ++updatedElementsCount;
-                    lines[idx].className += " snipettor-event-observer";
-                    lines[idx].addEventListener('dblclick', snippetorSelectHandler);
-                }
-            }
-            // show bubble UI on lines availability
-            if (lines.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
-                setTimeout(function() {
-                    ns.uiApi.showInitialBubble();
-                }, 200);
-
-            console.log("updatedElementsCount: " + updatedElementsCount);
-        }
-
-        function subscribeForTheLineDblClick_GitHub() {
-            var lines = document.getElementsByClassName("blob-num js-line-number");
-
-            function snippetorSelectHandler(e) {
-                var line = this.attributes["data-line-number"].value;
+              function snippetorSelectHandler(e) {
+                var lineNumber = siteHandler.getLineNumberOnClick(this, e);
+                console.log("LINE NUMBER ON CLICK IS : " + lineNumber);
+			    // Something goes wrong
+			    if (!lineNumber)
+			      return;
                 var xxx = window.location.href;
                 xxx = xxx.split("#")[0];
-                ns.uiApi.showBubble(e, xxx, line);
-            }
-            console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
-            var updatedElementsCount = 0;
-            for (var idx = 0; idx < lines.length; ++idx) {
-                if (!lines[idx].classList.contains("snipettor-event-observer")) {
-                    ++updatedElementsCount;
-                    lines[idx].className += " snipettor-event-observer";
-                    lines[idx].addEventListener('dblclick', snippetorSelectHandler);
-                }
-            }
-            // show bubble UI on lines availability
-            if (lines.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
-                setTimeout(function() {
-                    ns.uiApi.showInitialBubble();
-                }, 200);
-            console.log("updatedElementsCount: " + updatedElementsCount);
-        } // subscribeForTheLineDblClick
+                xxx = xxx.split("?")[0]; // Leave only clear path
+                ns.uiApi.showBubble(e, xxx, lineNumber);
+              }
 
-        function subscribeForTheLineDblClick_Bitbucket() {
-            var wrapper = document.getElementsByClassName("linenodiv");
-            if (wrapper.length == 0 || wrapper[0].childNodes.length == 0)
-              return;
-            var pre = wrapper[0].childNodes[0];
-            var lines = pre.childNodes;
-
-            function snippetorSelectHandler(e) {
-                var line = this.innerHTML;
-                var xxx = window.location.href;
-                xxx = xxx.split("?")[0];
-                ns.uiApi.showBubble(e, xxx, line);
-            }
-            console.log("GOT THE NUMBER OF ELEMENTS: " + lines.length);
-            var updatedElementsCount = 0;
-            for (var idx = 0; idx < lines.length; ++idx) {
+              for (var idx = 0; idx < lines.length; ++idx) {
                 if (!lines[idx].classList || !lines[idx].classList.contains("snipettor-event-observer")) {
-                    ++updatedElementsCount;
-                    lines[idx].className += " snipettor-event-observer";
-                    lines[idx].addEventListener('dblclick', snippetorSelectHandler);
+                  ++updatedElementsCount;
+                  lines[idx].className += " snipettor-event-observer";
+                  lines[idx].addEventListener('dblclick', snippetorSelectHandler);
                 }
-            }
-            // show bubble UI on lines availability
-            if (lines.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
+		      }
+              // show bubble UI on lines availability
+              if (lines.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
                 setTimeout(function() {
                     ns.uiApi.showInitialBubble();
                 }, 200);
-            console.log("updatedElementsCount: " + updatedElementsCount);
-        } // subscribeForTheLineDblClick
+              console.log("updatedElementsCount: " + updatedElementsCount);
+            } // subscribe function
+
+
+              siteHandlers = siteHandlers || [
+			   {
+				   // Name of the handler
+				   title: "GitHub",
+				   //
+				   // Url verification method
+				   //
+				   checkUrl: function(url) {
+					   return  (url.indexOf("https://github.com") == 0);
+				   },
+				   getLines: function() {
+                     return document.getElementsByClassName("blob-num js-line-number");
+				   },
+				   getLineNumberOnClick: function(element) {
+                     return element.attributes["data-line-number"].value;
+				   },
+				   getLineElementByNumber: function(lineNumber) {
+					   return findById("L" + lineNumber);
+				   }
+			   }, // GitHub
+			   {
+				   title: "BitBucket",
+				   //
+				   // Url verification method
+				   //
+				   checkUrl: function(url) {
+					   return  (url.indexOf("https://bitbucket.org") == 0);
+				   },
+				   getLines: function() {
+  	                 var wrapper = document.getElementsByClassName("linenodiv");
+                     if (wrapper.length == 0 || wrapper[0].childNodes.length == 0)
+                       return null;
+                     var pre = wrapper[0].childNodes[0];
+                     if (!pre)
+                       return null;
+                     return pre.childNodes;
+				   },
+				   getLineNumberOnClick: function(element) {
+					   return element.innerHTML;
+				   },
+				   //
+				   // Note: there are two items in the bitbucket structure
+				   //       one is a-tag and another one is #text == "\n"
+				   getLineElementByNumber: function(lineNumber) {
+                     var lines = this.getLines();
+                     if (!lines)
+                       return null;
+                     var line = pre.childNodes[(lineNumber-1)*2];
+
+	                 // Nothing loaded yet or something wrong with bitbucket structure
+                     if (!line || !line.innerHTML || parseInt(line.innerHTML) != lineNumber)
+                      return null;
+                     // got valid line number
+                     return line;
+				   }
+			   }, // BitBucket
+			   {
+				   title: "GoogleCodeSearch",
+				   checkUrl: function(url) {
+					   return  (url.indexOf("https://cs.chromium.org") == 0);
+				   },
+				   getLines: function() {
+  	                 return document.getElementsByClassName("lineNumber");
+				   },
+				   getLineNumberOnClick: function(element) {
+					   return parseInt(element.innerHTML);
+				   },
+				   getLineElementByNumber: function(lineNumber) {
+					   return findById("n" + lineNumber);
+				   }
+			   }, // cs.chromium.org
+			   {
+				   title: "UmlSync",
+				   checkUrl: function(url) {
+                     return  (url.indexOf("https://umlsync-6e2da.firebaseapp.com") == 0);
+				   },
+				   getLines: function() {
+                     return document.getElementsByClassName("us-element-border");
+				   },
+				   getLineNumberOnClick: function(element) {
+					   return element.id;
+				   },
+				   getLineElementByNumber: function(lineNumber) {
+					   return findById(lineNumber);
+				   }
+			   }
+			 ];
+
+		    // Subscribe for snippet bubble show
+		    // via concreate site handler
+		    for (var x in siteHandlers) {
+				if (siteHandlers[x].checkUrl(window.location.href)) {
+					snippetorSubscribeFunction(siteHandlers[x]);
+					break;
+				}
+			}
+        } // subscribe for the line dbl click
+
+        function getLineIndexElementByLineNumber(lineNumber) {
+		    for (var x in siteHandlers) {
+				if (siteHandlers[x].checkUrl(window.location.href)) {
+					return siteHandlers[x].getLineElementByNumber(lineNumber);
+				}
+			}
+			return null;
+		}
+
 
         window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
         window.addEventListener("load", function() {
@@ -456,93 +474,25 @@
                 // Handle navigation
                 this._NextPrevHelper(true, true);
 
-                if (item.url.indexOf("https://github.com/") == 0) {
-                    var line = findById("L" + item.line);
-                    console.log("GOT LINE ???? ");
-                    console.dir(line);
-                    if (!line)
-                      return;
+               var line = getLineIndexElementByLineNumber(item.line);
+               // Suppose that there is no 0 line
+               if (!line) {
+				   console.log("COULD NOT RESOLVE LINE FOR THE HOST");
+                 return;
+			   }
 
-                    this.showInitialBubbleRequestDone = true;
-                    var absPos = line.getBoundingClientRect();
-                    console.dir(line);
-                    // Cache current item position
-                    this.currentItem = item;
-                    this.currentItem.idx = itemIdx;
-                    // Handle UI element position
-                    var bubbleElement = this._getBubbleUi();
-                    bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
-                    bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
-                    bubbleElement.style.display = "block";
-                } else if (item.url.indexOf("https://bitbucket.org") == 0) {
-///////////////////////// TODO: make a dedicated classes for lines search
-            // Unfortunatly bitbucket do not have any correct identifier of each line
-            var wrapper = document.getElementsByClassName("linenodiv");
-            // Get an acccess to all available lines
-            if (wrapper.length == 0 || wrapper[0].childNodes.length == 0)
-              return;
-              
-            var pre = wrapper[0].childNodes[0];
-            // check if lines a loaded
-            if (!pre || pre.length == 0)
-              return;
-            var line = pre.childNodes[(item.line-1)*2];
+               this.showInitialBubbleRequestDone = true;
+               var absPos = line.getBoundingClientRect();
 
-            if (!line || !line.innerHTML || parseInt(line.innerHTML) != item.line) {
-			  // Nothing loaded yet or something wrong with bitbucket structure
-              return;
-		    }
-/////////////////////////
-                    this.showInitialBubbleRequestDone = true;
-                    var absPos = line.getBoundingClientRect();
-                    console.dir(line);
-                    // Cache current item position
-                    this.currentItem = item;
-                    this.currentItem.idx = itemIdx;
-                    // Handle UI element position
-                    var bubbleElement = this._getBubbleUi();
-                    bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
-                    bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
-                    bubbleElement.style.display = "block";
-                } else if (item.url.indexOf("https://cs.chromium.org/") == 0) {
-                    var line = findById("n" + item.line);
-                    this.showInitialBubbleRequestDone = true;
-                    var absPos = line.getBoundingClientRect();
-                    console.dir(absPos);
-                    // Cache current item index
-                    this.currentItem = item;
-                    this.currentItem.idx = itemIdx;
-                    // Handle UI element position
-                    var bubbleElement = this._getBubbleUi();
-                    bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
-                    bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
-                    bubbleElement.style.display = "block";
-                } else if (item.url.indexOf("https://umlsync-6e2da.firebaseapp.com") == 0) {
-                    var line = findById(item.line);
-                    console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL: " + item.line);
-                    console.dir(line);
+               // Cache current item position
+               this.currentItem = item;
+               this.currentItem.idx = itemIdx;
 
-                    if (!line) {
-                      var that = this;
-                      setTimeout(function() {
-                        that.showInitialBubble();
-                      }, 1000);
-                      return;
-                    }
-
-                    this.showInitialBubbleRequestDone = true;
-                    var absPos = line.getBoundingClientRect();
-                    console.dir(absPos);
-                    // Cache current item index
-                    this.currentItem = item;
-                    this.currentItem.idx = itemIdx;
-
-                    // Handle UI element position
-                    var bubbleElement = this._getBubbleUi();
-                    bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
-                    bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
-                    bubbleElement.style.display = "block";
-                }
+               // Handle UI element position
+               var bubbleElement = this._getBubbleUi();
+               bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
+               bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
+               bubbleElement.style.display = "block";
             },
             _NextPrevHelper: function(isSavedItem, isInitial) {
               // Handle Next/Prev elements visibility
