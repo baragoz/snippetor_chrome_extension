@@ -111,6 +111,7 @@
 
 
         var siteHandlers;
+        var isInitializedOnce = false;
 
         function subscribeForTheLineDblClick() {
 			//
@@ -145,11 +146,20 @@
                 setTimeout(function() {
                     ns.uiApi.showInitialBubble();
                 }, 200);
-              console.log("updatedElementsCount: " + updatedElementsCount);
+              if (updatedElementsCount == 0 && !isInitializedOnce) {
+  			    setTimeout(function() {
+                  subscribeForTheLineDblClick();
+  		        }, 1000);
+			  }
+			  else {
+				  isInitializedOnce = true;
+			  }
+            
             } // subscribe function
+            //////////////////////////////////////////////////
 
 
-              siteHandlers = siteHandlers || [
+            siteHandlers = siteHandlers || [
 			   {
 				   // Name of the handler
 				   title: "GitHub",
@@ -259,7 +269,9 @@
 
         window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
         window.addEventListener("load", function() {
-            subscribeForTheLineDblClick();
+			setTimeout(function() {
+              subscribeForTheLineDblClick();
+		    }, 1000);
         }, false);
 
         function findById(id, subscription, callback) {
@@ -945,7 +957,9 @@
         });
 
         // once more
-        subscribeForTheLineDblClick();
+        setTimeout(function() {
+          subscribeForTheLineDblClick();
+	    }, 200);
     }); // document ready
 
 })($);
