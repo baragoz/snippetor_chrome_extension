@@ -218,6 +218,18 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
         closeCurrentSnippet: function(data) {
             workingEnvironment[sender.tab.id] = null;
         },
+        unsubscribeSnippet: function(data) {
+            workingEnvironment[sender.tab.id] = null;
+        },
+        subscribeSnippet: function(data) {
+			for (var s in snippetsList)
+			  if (snippetsList[s] && snippetsList[s].uid == data.payload.uid) {
+                workingEnvironment[sender.tab.id] = s;
+                console.log("SSSSSSSSSSSSSSSSSSSSSSUBSCRIBED: " + data.payload.uid);
+                console.dir(snippetsList[s]);
+			  }
+        },
+
         editCurrentSnippet: function(data) {
           var pos = workingEnvironment[sender.tab.id];
           if (pos == null || pos < 0)

@@ -7,7 +7,7 @@
             extApi: {},
             uiApi: {}
         };
-        var isSnippetor = (window.location.href.indexOf("http://localhost:8000") == 0 || window.location.href.indexOf("https://snipettor.firebaseapp.com") == 0);
+        var isSnippetor = (window.location.href.indexOf("http://localhost:5000") == 0 || window.location.href.indexOf("https://snipettor.firebaseapp.com") == 0);
         if (!isSnippetor) {
             window.addEventListener("onSnippetChange", function(evt) {
                 var payload = evt.detail;
@@ -70,9 +70,17 @@
                     }));
                 });
 
+            } else if (payload.action == "subscribe") {
+                chrome.runtime.sendMessage({
+                    type: "subscribeSnippet",
+                    payload: payload.payload
+                }, function(response) {
+                    console.log("snippet has been subscribed. TODO: send a feedback message");
+                });
+
             } else if (payload.action == "unsubscribe") {
                 chrome.runtime.sendMessage({
-                    type: "closeCurrentSnippet",
+                    type: "unsubscribeSnippet",
                     payload: payload.payload
                 }, function(response) {
                     console.log("snippet has been unsubscribed. TODO: send a feedback message");
