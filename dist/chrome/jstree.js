@@ -1,973 +1,1406 @@
 /*globals jQuery, define, module, exports, require, window, document, postMessage */
 (function(jQuery) {
-    "use strict";
-    $(document).ready(function() {
+  "use strict";
+  $(document).ready(function() {
 
-        var ns = {
-            extApi: {},
-            uiApi: {}
-        };
-        var isSnippetor = (window.location.href.indexOf("http://localhost:5000") == 0 || window.location.href.indexOf("https://snipettor.firebaseapp.com") == 0);
-        if (!isSnippetor) {
-            window.addEventListener("onSnippetChange", function(evt) {
-                var payload = evt.detail;
-                if (payload.action == "save") {
-                    ns.uiApi.onSaveSnippet(payload);
-                } else if (payload.action == "create") {
-                    ns.uiApi.onCreateSnippet(payload);
-                } else if (payload.action == "open") {
-                    ns.uiApi.onOpenSnippet(payload);
-                } else if (payload.action == "edit-state") {
-                    ns.uiApi.onEditStateSnippet(payload);
-                } else {
-                    alert("Unknow snippet action: " + payload.action);
-                }
-            });
-
-            window.addEventListener("onSnippetItemChange", function(evt) {
-                var payload = evt.detail;
-                if (payload.action == "add") {
-                    ns.uiApi.onAddItem(payload);
-                } else if (payload.action == "remove") {
-                    ns.uiApi.onRemoveItem(payload);
-                } else if (payload.action == "change") {
-                    ns.uiApi.onChangeItem(payload);
-                } else if (payload.action == "move") {
-                    ns.uiApi.onMoveItem(payload);
-                } else if (payload.action == "update") {
-                    ns.uiApi.onUpdateItem(payload);
-                } else {
-                    alert("Unknow snippet action: " + payload.action);
-                }
-            });
+    var ns = {
+      extApi: {},
+      uiApi: {}
+    };
+    var isSnippetor = (window.location.href.indexOf("http://localhost:5000") == 0 || window.location.href.indexOf("https://snipettor.firebaseapp.com") == 0);
+    if (!isSnippetor) {
+      window.addEventListener("onSnippetChange", function(evt) {
+        var payload = evt.detail;
+        if (payload.action == "save") {
+          ns.uiApi.onSaveSnippet(payload);
+        } else if (payload.action == "create") {
+          ns.uiApi.onCreateSnippet(payload);
+        } else if (payload.action == "open") {
+          ns.uiApi.onOpenSnippet(payload);
+        } else if (payload.action == "edit-state") {
+          ns.uiApi.onEditStateSnippet(payload);
+        } else {
+          alert("Unknow snippet action: " + payload.action);
         }
+      });
 
-        window.addEventListener("onSnipettorAction", function(evt) {
-            var payload = evt.detail;
-            console.dir(payload);
-            if (payload.action == "saved-draft") {
-                chrome.runtime.sendMessage({
-                    type: "onSaveSnippetDraft",
-                    payload: {
-                        uid: payload.payload.uid
-                    }
-                }, function(response) {});
-            } else if (payload.action == "open-snippet") {
-                chrome.runtime.sendMessage({
-                    type: "onOpenSnippet",
-                    payload: payload.data
-                }, function(response) {});
-            }
-            if (payload.action == "select-snippet") {
-                chrome.runtime.sendMessage({
-                    type: "openSnippet",
-                    payload: payload.data
-                }, function(response) {});
-            } else if (payload.action == "GetInitialState") {
-                ns.extApi.init(function(response) {
-                    window.dispatchEvent(new CustomEvent("onInit", {
-                        detail: response
-                    }));
-                });
+      window.addEventListener("onSnippetItemChange", function(evt) {
+        var payload = evt.detail;
+        if (payload.action == "add") {
+          ns.extApi.onAddItem(payload);
+        } else if (payload.action == "remove") {
+          ns.extApi.onRemoveItem(payload);
+        } else if (payload.action == "change") {
+          ns.extApi.onChangeItem(payload);
+        } else if (payload.action == "move") {
+          ns.extApi.onMoveItem(payload);
+        } else if (payload.action == "update") {
+          ns.extApi.onUpdateItem(payload);
+        } else {
+          alert("Unknow snippet action: " + payload.action);
+        }
+      });
+    }
 
-            } else if (payload.action == "subscribe") {
-                chrome.runtime.sendMessage({
-                    type: "subscribeSnippet",
-                    payload: payload.payload
-                }, function(response) {
-                    console.log("snippet has been subscribed. TODO: send a feedback message");
-                });
-
-            } else if (payload.action == "unsubscribe") {
-                chrome.runtime.sendMessage({
-                    type: "unsubscribeSnippet",
-                    payload: payload.payload
-                }, function(response) {
-                    console.log("snippet has been unsubscribed. TODO: send a feedback message");
-                });
-
-            } else if (payload.action == "edit-current-snippet") {
-                chrome.runtime.sendMessage({
-                    type: "editCurrentSnippet",
-                    payload: payload.payload
-                }, function(response) {
-                    console.log("snippet edit state has been updated");
-                });
-            } else if (payload.action == "select-snippet") {} else if (payload.action == "update-snippet-item") {
-                chrome.runtime.sendMessage({
-                    type: "updateItem",
-                    payload: payload.payload
-                }, function(response) {
-                    console.log("snippet has been updated");
-                });
-            } else if (payload.action == "delete-snippet-item") {
-                chrome.runtime.sendMessage({
-                    type: "removeItem",
-                    payload: payload.payload.index
-                }, function(response) {
-                    console.log("snippet has been updated");
-                });
-            } else if (payload.action == "move-snippet-item") {
-                chrome.runtime.sendMessage({
-                    type: "moveItem",
-                    payload: payload.payload
-                }, function(response) {
-                    console.log("snippet has been updated");
-                });
-            }
+    window.addEventListener("onSnipettorAction", function(evt) {
+      var payload = evt.detail;
+      console.dir(payload);
+      if (payload.action == "saved-draft") {
+        chrome.runtime.sendMessage({
+          type: "onSaveSnippetDraft",
+          payload: {
+            uid: payload.payload.uid
+          }
+        }, function(response) {});
+      } else if (payload.action == "open-snippet") {
+        chrome.runtime.sendMessage({
+          type: "onOpenSnippet",
+          payload: payload.data
+        }, function(response) {});
+      }
+      if (payload.action == "select-snippet") {
+        chrome.runtime.sendMessage({
+          type: "openSnippet",
+          payload: payload.data
+        }, function(response) {});
+      } else if (payload.action == "GetInitialState") {
+        ns.extApi.init(function(response) {
+          window.dispatchEvent(new CustomEvent("onInit", {
+            detail: response
+          }));
         });
 
+      } else if (payload.action == "subscribe") {
+        chrome.runtime.sendMessage({
+          type: "subscribeSnippet",
+          payload: payload.payload
+        }, function(response) {
+          console.log("snippet has been subscribed. TODO: send a feedback message");
+        });
 
-        var siteHandlers;
-        var isInitializedOnce = false;
+      } else if (payload.action == "unsubscribe") {
+        chrome.runtime.sendMessage({
+          type: "unsubscribeSnippet",
+          payload: payload.payload
+        }, function(response) {
+          console.log("snippet has been unsubscribed. TODO: send a feedback message");
+        });
 
-        function subscribeForTheLineDblClick() {
-			//
-			// Make a subscription via concreate site handler
-			// but subscription method is common for all sites
-			//
-            function snippetorSubscribeFunction(siteHandler) {
-              var lines = siteHandler.getLines();
-              var updatedElementsCount = 0;
-
-              function snippetorSelectHandler(e) {
-                var lineNumber = siteHandler.getLineNumberOnClick(this, e);
-                console.log("LINE NUMBER ON CLICK IS : " + lineNumber);
-			    // Something goes wrong
-			    if (!lineNumber)
-			      return;
-                var xxx = window.location.href;
-                xxx = xxx.split("#")[0];
-                xxx = xxx.split("?")[0]; // Leave only clear path
-                ns.uiApi.showBubble(e, xxx, lineNumber);
-              }
-
-              for (var idx = 0; idx < lines.length; ++idx) {
-                if (!lines[idx].classList || !lines[idx].classList.contains("snipettor-event-observer")) {
-                  ++updatedElementsCount;
-                  lines[idx].className += " snipettor-event-observer";
-                  lines[idx].addEventListener('dblclick', snippetorSelectHandler);
-                }
-		      }
-              // show bubble UI on lines availability
-              if (lines.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
-                setTimeout(function() {
-                    ns.uiApi.showInitialBubble();
-                }, 200);
-              if (updatedElementsCount == 0 && !isInitializedOnce) {
-  			    setTimeout(function() {
-                  subscribeForTheLineDblClick();
-  		        }, 1000);
-			  }
-			  else {
-				  isInitializedOnce = true;
-			  }
-            
-            } // subscribe function
-            //////////////////////////////////////////////////
+      } else if (payload.action == "edit-current-snippet") {
+        chrome.runtime.sendMessage({
+          type: "editCurrentSnippet",
+          payload: payload.payload
+        }, function(response) {
+          console.log("snippet edit state has been updated");
+        });
+      } else if (payload.action == "select-snippet") {} else if (payload.action == "update-snippet-item") {
+        chrome.runtime.sendMessage({
+          type: "updateItem",
+          payload: payload.payload
+        }, function(response) {
+          console.log("snippet has been updated");
+        });
+      } else if (payload.action == "delete-snippet-item") {
+        chrome.runtime.sendMessage({
+          type: "removeItem",
+          payload: payload.payload.index
+        }, function(response) {
+          console.log("snippet has been updated");
+        });
+      } else if (payload.action == "move-snippet-item") {
+        chrome.runtime.sendMessage({
+          type: "moveItem",
+          payload: payload.payload
+        }, function(response) {
+          console.log("snippet has been updated");
+        });
+      }
+    });
 
 
-            siteHandlers = siteHandlers || [
-			   {
-				   // Name of the handler
-				   title: "GitHub",
-				   //
-				   // Url verification method
-				   //
-				   checkUrl: function(url) {
-					   return  (url.indexOf("https://github.com") == 0);
-				   },
-				   getLines: function() {
-                     return document.getElementsByClassName("blob-num js-line-number");
-				   },
-				   getLineNumberOnClick: function(element) {
-                     return element.attributes["data-line-number"].value;
-				   },
-				   getLineElementByNumber: function(lineNumber) {
-					   return findById("L" + lineNumber);
-				   }
-			   }, // GitHub
-			   {
-				   title: "BitBucket",
-				   //
-				   // Url verification method
-				   //
-				   checkUrl: function(url) {
-					   return  (url.indexOf("https://bitbucket.org") == 0);
-				   },
-				   getLines: function() {
-  	                 var wrapper = document.getElementsByClassName("linenodiv");
-                     if (wrapper.length == 0 || wrapper[0].childNodes.length == 0)
-                       return null;
-                     var pre = wrapper[0].childNodes[0];
-                     if (!pre)
-                       return null;
-                     return pre.childNodes;
-				   },
-				   getLineNumberOnClick: function(element) {
-					   return element.innerHTML;
-				   },
-				   //
-				   // Note: there are two items in the bitbucket structure
-				   //       one is a-tag and another one is #text == "\n"
-				   getLineElementByNumber: function(lineNumber) {
-                     var lines = this.getLines();
-                     if (!lines)
-                       return null;
-                     var line = pre.childNodes[(lineNumber-1)*2];
+    var siteHandlers;
+    var isInitializedOnce = false;
 
-	                 // Nothing loaded yet or something wrong with bitbucket structure
-                     if (!line || !line.innerHTML || parseInt(line.innerHTML) != lineNumber)
-                      return null;
-                     // got valid line number
-                     return line;
-				   }
-			   }, // BitBucket
-			   {
-				   title: "GoogleCodeSearch",
-				   checkUrl: function(url) {
-					   return  (url.indexOf("https://cs.chromium.org") == 0);
-				   },
-				   getLines: function() {
-  	                 return document.getElementsByClassName("lineNumber");
-				   },
-				   getLineNumberOnClick: function(element) {
-					   return parseInt(element.innerHTML);
-				   },
-				   getLineElementByNumber: function(lineNumber) {
-					   return findById("n" + lineNumber);
-				   }
-			   }, // cs.chromium.org
-			   {
-				   title: "UmlSync",
-				   checkUrl: function(url) {
-                     return  (url.indexOf("https://umlsync-6e2da.firebaseapp.com") == 0);
-				   },
-				   getLines: function() {
-                     return document.getElementsByClassName("us-element-border");
-				   },
-				   getLineNumberOnClick: function(element) {
-					   return element.id;
-				   },
-				   getLineElementByNumber: function(lineNumber) {
-					   return findById(lineNumber);
-				   }
-			   }
-			 ];
+    function subscribeForTheLineDblClick() {
+      //
+      // Make a subscription via concreate site handler
+      // but subscription method is common for all sites
+      //
+      function snippetorSubscribeFunction(siteHandler) {
+        var lines = siteHandler.getLines();
+        var updatedElementsCount = 0;
 
-		    // Subscribe for snippet bubble show
-		    // via concreate site handler
-		    for (var x in siteHandlers) {
-				if (siteHandlers[x].checkUrl(window.location.href)) {
-					snippetorSubscribeFunction(siteHandlers[x]);
-					break;
-				}
-			}
-        } // subscribe for the line dbl click
-
-        function getLineIndexElementByLineNumber(lineNumber) {
-		    for (var x in siteHandlers) {
-				if (siteHandlers[x].checkUrl(window.location.href)) {
-					return siteHandlers[x].getLineElementByNumber(lineNumber);
-				}
-			}
-			return null;
-		}
-
-
-        window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
-        window.addEventListener("load", function() {
-			setTimeout(function() {
-              subscribeForTheLineDblClick();
-		    }, 1000);
-        }, false);
-
-        function findById(id, subscription, callback) {
-            var element = document.getElementById(id);
-            if (element && subscription && callback) {
-                element.addEventListener(subscription, function(e) {
-                    e.stopPropagation();
-                    callback(e);
-                });
-            }
-            return element;
-        }
-
-        ns.extApi = {
-            items: [],
-            workingSnippetId: null,
-            extensionWorkingItemId: null,
-            state: "idle",
-            isWorkingSnippet: function(payload) {
-              return (payload.working == this.workingSnippetId);
-            },
-            onSaveSnippet: function(id) {
-              // Remove snippet from the menu list, because it is not draft anymore
-              ns.extApi.snippetsList[id] = null;
-            },
-            createSnippet: function(title, callback) {
-                chrome.runtime.sendMessage({
-                    type: "createSnippet",
-                    payload: {
-                        title: title,
-                        isModified: true
-                    }
-                }, function(response) {
-                    // get an id of the working snippet
-                    ns.extApi.workingSnippetId = response.working;
-                    console.log("Snippet created");
-                    if (callback)
-                        callback(response);
-                });
-            },
-            openSnippet: function(idx) {
-                chrome.runtime.sendMessage({
-                    type: "openSnippet",
-                    payload: idx
-                }, function(response) {});
-                ns.extApi.items = ns.extApi.snippetsList[idx].items;
-                ns.extApi.workingSnippetId = idx;
-            },
-            openSnippetItem: function(id, callback) {
-                ns.uiApi.showInitialBubbleRequestDone = false;
-                ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem = id;
-
-                chrome.runtime.sendMessage({
-                    type: "openItem",
-                    payload: id
-                }, function(response) {
-                    console.log("Open snippet complete");
-                    if (callback)
-                        callback(response);
-                });
-
-            },
-            saveSnippet: function(callback) {
-                chrome.runtime.sendMessage({
-                    type: "saveSnippet"
-                }, function(response) {
-                    console.log("Snippet saved probably");
-                    if (callback)
-                        callback(response);
-                });
-            },
-            addNewItem: function(url, line, comment, callback) {
-                chrome.runtime.sendMessage({
-                    type: "addNewItem",
-                    payload: {
-                        url: url,
-                        line: line,
-                        comment: comment
-                    }
-                }, function(response) {
-                    console.log("item added");
-                    ns.extApi.items.push({
-                        url: url,
-                        line: line,
-                        comment: comment
-                    });
-                    ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.push({
-                        url: url,
-                        line: line,
-                        comment: comment
-                    });
-                    if (callback)
-                        callback(response);
-                });
-            },
-            updateItemComment: function(idx, comment) {
-                chrome.runtime.sendMessage({
-                    type: "updateItem",
-                    payload: {
-                        idx: idx,
-                        item: {
-                            comment: comment
-                        }
-                    }
-                }, function(response) {
-                    console.log("snippet has been updated");
-                });
-                this.snippetsList[this.workingSnippetId].items[idx].comment = comment;
-                this.items[idx].comment = comment;
-            },
-            moveIndex: function(payload) {
-                chrome.runtime.sendMessage({
-                    type: "moveItem",
-                    payload: payload
-                }, function(response) {
-                    console.log("snippet has been updated");
-                });
-                // change the position of old item and new item
-                var item = ns.extApi.items[payload.oldIndex];
-                ns.extApi.items.splice(payload.oldIndex, 1);
-                ns.extApi.items.splice(payload.newIndex, 0, item);
-
-                ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(payload.oldIndex, 1);
-                ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(payload.newIndex, 0, item);
-            },
-            closeCurrentSnippet: function() {
-                chrome.runtime.sendMessage({
-                    type: "closeCurrentSnippet",
-                    payload: ns.extApi.workingSnippetId
-                }, function(response) {
-                    console.log("snippet has been unsubscribed");
-                });
-                // reset state to the IDLE
-                ns.extApi.workingSnippetId = null;
-                ns.extApi.items = [];
-                ns.extApi.extensionWorkingItemId = undefined;
-                ns.extApi.state = "idle";
-            },
-            init: function(callback) {
-                chrome.runtime.sendMessage({
-                    type: "initialItems",
-                    payload: {}
-                }, function(response) {
-                    console.log("IIIIIIIIIIIIIIIII");
-                    console.dir(response);
-                    ns.extApi.workingSnippetId = response.working;
-                    ns.extApi.items = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].items : [];
-                    ns.extApi.extensionWorkingItemId = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem : null;
-                    ns.extApi.snippetsList = response.snippets;
-                    if (callback)
-                        callback(response);
-                });
-            }
-        };
-
-        // all the code below extend the standard UI of the page
-        // So, we do not need to extend the UI of snipettor page
-        if (isSnippetor)
+        function snippetorSelectHandler(e) {
+          var lineNumber = siteHandler.getLineNumberOnClick(this, e);
+          console.log("LINE NUMBER ON CLICK IS : " + lineNumber);
+          // Something goes wrong
+          if (!lineNumber)
             return;
+          var xxx = window.location.href;
+          xxx = xxx.split("#")[0];
+          xxx = xxx.split("?")[0]; // Leave only clear path
+          ns.uiApi.showBubble(e, xxx, lineNumber);
+        }
 
-        ns.uiApi = {
-            bubbleElement: null,
-            url: null,
-            //
-            // Cache bubble UI element
-            //
-            _getBubbleUi: function() {
-                if (this.bubbleElement == null) {
-                    // Cache bubble dialog
-                    var that = this;
-                    // Cache BUBBLE UI element and manage hide/show behavior
-                    this.bubbleElement = findById("snipettor-bubble-dialog");
-                    findById("snipettor-bubble-dialog-textarea").value = that.currentItem.comment || "";
-                    // Subscribe for SAVE button
-                    findById("snipettor-bubble-dialog-save", "click", function(e) {
-                        // read current value and reset input
-                        var r = findById("snipettor-bubble-dialog-textarea").value;
-                        findById("snipettor-bubble-dialog-textarea").value = "";
-                        console.log("SAVE BUBBLE !!!: " + that.currentItem.line)
-                        if (that.currentItem.idx != undefined) {
-                            ns.uiApi.updateItemComment(that.currentItem.idx, r);
-                        } else {
-                            ns.uiApi.showNewItem(that.currentItem.url, that.currentItem.line, r, false, false, true);
-                        }
-                        that.bubbleElement.style.display = "none";
-                    });
-                    // Subscrbe for CANCEL button
-                    findById("snipettor-bubble-dialog-cancel", "click", function(e) {
-                        findById("snipettor-bubble-dialog-textarea").value = "";
-                        that.bubbleElement.style.display = "none";
-                    });
-                } else {
-                    findById("snipettor-bubble-dialog-textarea").value = this.currentItem.comment || "";
-                }
-                return this.bubbleElement;
-            },
-            //
-            // Show an initial bubble of the snippet page open
-            //
-            showInitialBubble: function() {
-                if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
-                    return;
+        for (var idx = 0; idx < lines.length; ++idx) {
+          if (!lines[idx].classList || !lines[idx].classList.contains("snipettor-event-observer")) {
+            ++updatedElementsCount;
+            lines[idx].className += " snipettor-event-observer";
+            lines[idx].addEventListener('dblclick', snippetorSelectHandler);
+          }
+        }
+        // show bubble UI on lines availability
+        if (lines.length > 0 || ns.uiApi.showInitialBubbleRequestDone == false)
+          setTimeout(function() {
+            ns.uiApi.showInitialBubble();
+          }, 200);
+        if (updatedElementsCount == 0 && !isInitializedOnce) {
+          setTimeout(function() {
+            subscribeForTheLineDblClick();
+          }, 1000);
+        } else {
+          isInitializedOnce = true;
+        }
 
-                if (this.showInitialBubbleRequestDone)
-                    return;
+      } // subscribe function
+      //////////////////////////////////////////////////
 
-                var itemIdx = ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem;
-                var item = ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[itemIdx];
-                // skip bubble show on empy element
-                if (itemIdx == undefined  || item == undefined)
-                    return;
-                // Handle navigation
-                this._NextPrevHelper(true, true);
 
-               var line = getLineIndexElementByLineNumber(item.line);
-               // Suppose that there is no 0 line
-               if (!line) {
-				   console.log("COULD NOT RESOLVE LINE FOR THE HOST");
-                 return;
-			   }
+      siteHandlers = siteHandlers || [{
+          // Name of the handler
+          title: "GitHub",
+          //
+          // Url verification method
+          //
+          checkUrl: function(url) {
+            return (url.indexOf("https://github.com") == 0);
+          },
+          getLines: function() {
+            return document.getElementsByClassName("blob-num js-line-number");
+          },
+          getLineNumberOnClick: function(element) {
+            return element.attributes["data-line-number"].value;
+          },
+          getLineElementByNumber: function(lineNumber) {
+            return findById("L" + lineNumber);
+          }
+        }, // GitHub
+        {
+          title: "BitBucket",
+          //
+          // Url verification method
+          //
+          checkUrl: function(url) {
+            return (url.indexOf("https://bitbucket.org") == 0);
+          },
+          getLines: function() {
+            var wrapper = document.getElementsByClassName("linenodiv");
+            if (wrapper.length == 0 || wrapper[0].childNodes.length == 0)
+              return null;
+            var pre = wrapper[0].childNodes[0];
+            if (!pre)
+              return null;
+            return pre.childNodes;
+          },
+          getLineNumberOnClick: function(element) {
+            return element.innerHTML;
+          },
+          //
+          // Note: there are two items in the bitbucket structure
+          //       one is a-tag and another one is #text == "\n"
+          getLineElementByNumber: function(lineNumber) {
+            var lines = this.getLines();
+            if (!lines)
+              return null;
+            var line = pre.childNodes[(lineNumber - 1) * 2];
 
-               this.showInitialBubbleRequestDone = true;
-               var absPos = line.getBoundingClientRect();
+            // Nothing loaded yet or something wrong with bitbucket structure
+            if (!line || !line.innerHTML || parseInt(line.innerHTML) != lineNumber)
+              return null;
+            // got valid line number
+            return line;
+          }
+        }, // BitBucket
+        {
+          title: "GoogleCodeSearch",
+          checkUrl: function(url) {
+            return (url.indexOf("https://cs.chromium.org") == 0);
+          },
+          getLines: function() {
+            return document.getElementsByClassName("lineNumber");
+          },
+          getLineNumberOnClick: function(element) {
+            return parseInt(element.innerHTML);
+          },
+          getLineElementByNumber: function(lineNumber) {
+            return findById("n" + lineNumber);
+          }
+        }, // cs.chromium.org
+        {
+          title: "UmlSync",
+          checkUrl: function(url) {
+            return (url.indexOf("https://umlsync-6e2da.firebaseapp.com") == 0);
+          },
+          getLines: function() {
+            return document.getElementsByClassName("us-element-border");
+          },
+          getLineNumberOnClick: function(element) {
+            return element.id;
+          },
+          getLineElementByNumber: function(lineNumber) {
+            return findById(lineNumber);
+          }
+        }
+      ];
 
-               // Cache current item position
-               this.currentItem = item;
-               this.currentItem.idx = itemIdx;
+      // Subscribe for snippet bubble show
+      // via concreate site handler
+      for (var x in siteHandlers) {
+        if (siteHandlers[x].checkUrl(window.location.href)) {
+          snippetorSubscribeFunction(siteHandlers[x]);
+          break;
+        }
+      }
+    } // subscribe for the line dbl click
 
-               // Handle UI element position
-               var bubbleElement = this._getBubbleUi();
-               bubbleElement.style.top = (absPos.top + 20 + document.scrollingElement.scrollTop) + "px";
-               bubbleElement.style.left = (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px";
-               bubbleElement.style.display = "block";
-            },
-            _NextPrevHelper: function(isSavedItem, isInitial) {
-              // Handle Next/Prev elements visibility
-              var next_element = findById("snipettor-bubble-dialog-next"),
-                  prev_element = findById("snipettor-bubble-dialog-prev");
-                              if (isSavedItem) {
-                                next_element.style.display = "block";
-                                next_element.disabled = (ns.extApi.extensionWorkingItemId == ns.extApi.items.length -1);
-                                prev_element.style.display = "block";
-                                prev_element.disabled = (ns.extApi.extensionWorkingItemId <= 0);
-                              }
-                              else {
-                                next_element.style.display = "none";
-                                prev_element.style.display = "none";
-                              }
-                  if (isInitial) {
-                    findById("snipettor-bubble-dialog-next", "click", function(e) {
-                      e.stopPropagation();
-                      if (ns.extApi.extensionWorkingItemId < ns.extApi.items.length -1) {
-                        ns.extApi.extensionWorkingItemId++
-                        ns.extApi.openSnippetItem(ns.extApi.extensionWorkingItemId);
-                      }
-                    });
-                    findById("snipettor-bubble-dialog-prev", "click", function(e) {
-                      e.stopPropagation();
-                      if (ns.extApi.extensionWorkingItemId > 0) {
-                        ns.extApi.extensionWorkingItemId--;
-                        ns.extApi.openSnippetItem(ns.extApi.extensionWorkingItemId);
-                      }
-                    });
-                  }
-            },
-            //
-            // Show input bubble at UI position
-            //
-            showBubble: function(evt, url, line) {
-                // Do nothing if snippet was not named
-                if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
-                    return;
+    function getLineIndexElementByLineNumber(lineNumber) {
+      for (var x in siteHandlers) {
+        if (siteHandlers[x].checkUrl(window.location.href)) {
+          return siteHandlers[x].getLineElementByNumber(lineNumber);
+        }
+      }
+      return null;
+    }
 
-                this.currentItem = {
-                    url: url,
-                    line: line
-                };
+    // Subscribe for line numbers
+    window.subscribeForTheLineDblClick = subscribeForTheLineDblClick;
+    window.addEventListener("load", function() {
+      setTimeout(function() {
+        subscribeForTheLineDblClick();
+      }, 1000);
+    }, false);
 
-                this._NextPrevHelper(false);
+    function findById(id, subscription, callback) {
+      var element = document.getElementById(id);
+      if (element && subscription && callback) {
+        element.addEventListener(subscription, function(e) {
+          e.stopPropagation();
+          callback(e);
+        });
+      }
+      return element;
+    }
 
-                var bubbleElement = this._getBubbleUi();
-                bubbleElement.style.top = (evt.pageY + 20) + "px";
-                bubbleElement.style.left = (evt.pageX + 10) + "px";
-                bubbleElement.style.display = "block";
-                evt.stopPropagation();
-            },
-            updateItemComment: function(idx, comment) {
-                // Do nothing if snippet was not named
-                if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
-                    return;
-                ns.extApi.updateItemComment(idx, comment);
-            },
-            snippetsList: null,
-            current_index: 0,
-            showNewItem: function(url, line, comment, isInit, skipSubsciption, isActive) {
-                this.current_index++;
-                //
-                // Hide previous active items
-                //
-                if (isActive) {
-                  var activeItems = document.getElementsByClassName("snipettor-active-menu-item");
-                  for (var i=0; i< activeItems.length; ++i)
-                    activeItems[i].classList.remove("snipettor-active-menu-item");
-                }
+    ns.extApi = {
+      items: [],
+      workingSnippetId: null,
+      extensionWorkingItemId: null,
+      state: "idle",
+      //
+      // Return the working item
+      //
+      getWorkingItem: function() {
+        if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
+          return null;
 
-                var payload = url.length > 20 ? url.substr(url.length - 20) : url;
-                this.snippetsList = findById("menu-snippets-list");
-                this.snippetsList.innerHTML += '<li><a class="snippetor-navigation-item '+ (isActive ? "snipettor-active-menu-item" : "")+ '" aria-label="' + url + '" id="snippetor-active-item-' + this.current_index + '">' + payload + ':' + line + '</a></li>';
-                // skip subscription on init
-                console.log("ADD NEW ITEM: " + line);
-                if (!isInit)
-                    ns.extApi.addNewItem(url, line, comment);
-                if (!skipSubsciption) {
-                    var navigation = document.getElementsByClassName("snippetor-navigation-item");
-                    // replace on map function
-                    for (var v = 0; v < navigation.length; ++v) {
-                        navigation[v].addEventListener('click', (function(payload) {
-                            var pl = payload;
-                            return function(e) {
-                                e.stopPropagation();
-                                ns.extApi.openSnippetItem(pl);
-                            };
-                        })(v));
-                    }
-                    if (typeof SnippetSortable !== 'undefined') {
-                        SnippetSortable.create(this.snippetsList, {
-                            delay: 100,
-                            onEnd: function(evt) {
-                                ns.extApi.moveIndex({
-                                    oldIndex: evt.oldIndex,
-                                    newIndex: evt.newIndex
-                                });
-                            }
-                        });
-                    } // check if exists
+        var itemIdx = ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem;
+        if (itemIdx == null || itemIdx == undefined)
+          return null;
+        return ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[itemIdx];
+      },
+      saveNewItemAtCurrentPosition: function(item) {
+        var itemIdx = ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem;
 
-                }
-                console.log("Show new item: " + url);
-            },
-            init: function() {
-                ns.extApi.init(function() {
-                    if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
-                        ns.uiApi.refreshItemsUiList();
-                        // Force change
-                        var isMod = ns.extApi.snippetsList[ns.extApi.workingSnippetId].isModified;
-                        console.log("IS MODIFIED ? " + isMod);
-                        ns.uiApi.toggleSave(isMod, !isMod);
-                        ns.uiApi.toggleCreate(false);
-                    } else {
-                        ns.uiApi.toggleSave(false, false);
-                        ns.uiApi.toggleCreate(false);
-                    }
+        this.addNewItem(itemIdx, item, function(response) {
+          // add to the end of the existing list
+          ns.uiApi.onAddItem(ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[itemIdx], itemIdx);
+        });
+      },
+      updateCommentForCurrentSnippetItem: function(comment) {
+        var item = this.getWorkingItem();
+        if (!item) {
+          console.log("Error: there is no snippet item which we can change comment for.");
+          return;
+        }
+        this.updateItemComment(ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem, comment);
+      },
+      //
+      //
+      isWorkingSnippet: function(payload) {
+        return (payload.working == this.workingSnippetId);
+      },
+      onSaveSnippet: function(id) {
+        // Remove snippet from the menu list, because it is not draft anymore
+        ns.extApi.snippetsList[id] = null;
+      },
+      createSnippet: function(title, callback) {
+        chrome.runtime.sendMessage({
+          type: "createSnippet",
+          payload: {
+            title: title,
+            isModified: true
+          }
+        }, function(response) {
+          // get an id of the working snippet
+          ns.extApi.workingSnippetId = response.working;
+          console.log("Snippet created");
+          if (callback)
+            callback(response);
+        });
+      },
+      openSnippet: function(idx) {
+        chrome.runtime.sendMessage({
+          type: "openSnippet",
+          payload: idx
+        }, function(response) {});
+        ns.extApi.workingSnippetId = idx;
+      },
+      openSnippetItem: function(id, callback) {
+        ns.uiApi.showInitialBubbleRequestDone = false;
+        ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem = id;
 
-                    ns.uiApi.toggleVMenu(false);
-                    //
-                    // Work-around for a S-menu toggle: we need to toggle vertical when user do nothing with snippet
-                    // and horizontal otherwise.
-                    // So we need to minimize menu on start in case which described above
-                    //
-                    if (ns.extApi.workingSnippetId == null && ns.extApi.workingSnippetId == undefined) {
-                        if (!isSnippetor) {
-                            snippetorToggleAction.style.width = "42px";
-                            snippetorToggleAction.style.height = "49px";
-                        }
-                    }
-                    ns.uiApi.refreshVertMenu();
-                });
-            },
-            //
-            // Change an edit mode of the opened snippet
-            //
-            changeEditMode: function(isModified) {
-              if (isModified) {
-                $("#snippetor-edit-action").hide();
-                $("#snippetor-save-action").show();
-              }
-              else {
-                $("#snippetor-edit-action").show();
-                $("#snippetor-save-action").hide();
-              }
-            },
-            refreshVertMenu: function() {
-                if (isSnippetor)
-                    return;
-                var vertMenu = findById("snippetor-vertical-menu");
-                if (vertMenu) {
-                    // Empty previous value
-                    vertMenu.innerHTML = '<li><a id="snipettor-create-item">Create</a></li>';
+        chrome.runtime.sendMessage({
+          type: "openItem",
+          payload: id
+        }, function(response) {
+          console.log("Open snippet complete");
+          if (callback)
+            callback(response);
+        });
 
-                    for (var t in ns.extApi.snippetsList) {
-                        var snippet = ns.extApi.snippetsList[t];
-                        if (snippet) {
-                            vertMenu.innerHTML += '<li><a snippet_item="' + t + '" class="snipettor-select-menu-item">' + (snippet.title || 'no title') + '</a></li>';
-                        }
-                    }
-                    findById("snipettor-create-item", "click", function(e) {
-                        ns.uiApi.toggleCreate(true);
-                        ns.uiApi.toggleVMenu(false);
-                        // hide top line
-                        findById("menu-dddd").dispatchEvent(new Event("click"));
-                    });
-
-                    var snippetDrafts = document.getElementsByClassName("snipettor-select-menu-item");
-                    for (var x = 0; x < snippetDrafts.length; ++x) {
-                        snippetDrafts[x].addEventListener("click", function(e) {
-                            var index = parseInt(this.attributes["snippet_item"].value);
-                            console.log("ITEM IS:" + index);
-                            ns.uiApi.openSnippet(index);
-                        });
-                    }
-                } // vertical menu
-            },
-            //
-            // Re-draw and subscribe on UI list again
-            //
-            refreshItemsUiList: function() {
-                if (isSnippetor)
-                    return;
-                var snippetsList = findById("menu-snippets-list");
-                snippetsList.innerHTML = '';
-                if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
-                    // update according to the modified state
-                    var isMod = ns.extApi.snippetsList[ns.extApi.workingSnippetId].isModified;
-                    ns.uiApi.toggleSave(isMod, !isMod);
-                    // Add all snippet items
-                    for (var x in ns.extApi.items) {
-                        console.log("POST INIT: []" + x);
-                        var tmp = ns.extApi.items[x];
-                        var isActive = x == ns.extApi.extensionWorkingItemId;
-                        ns.uiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false, isActive);
-                    }
-                }
-            },
-            openSnippet: function(idx) {
-                // open top menu on save mode
-                ns.uiApi.toggleCreate(false);
-                ns.uiApi.toggleVMenu(false);
-
-                ns.extApi.openSnippet(idx);
-                // refresh snippets on open
-                ns.uiApi.refreshItemsUiList();
-
-                // hide top line
-                findById("menu-dddd").dispatchEvent(new Event("click"));
-            },
-            closeCurrentSnippet: function() {
-                // hide top line
-                findById("menu-dddd").dispatchEvent(new Event("click"));
-
-                // hide all menus
-                ns.uiApi.toggleSave(false, false);
-                ns.uiApi.toggleCreate(false);
-                ns.uiApi.toggleVMenu(false);
-
-                this.snippetsList = findById("menu-snippets-list");
-                this.snippetsList.innerHTML = "";
-                if (this.bubbleElement)
-                    this.bubbleElement.style.display = "none";
-
-                // Notify extension about snippet close for the current tab
-                ns.extApi.closeCurrentSnippet();
-            },
-            toggleVMenu: function(flag) {
-                if (isSnippetor)
-                    return;
-                var vertMenu = findById("snippetor-vertical-menu");
-                if (flag == undefined) {
-                    flag = vertMenu.style.display == "none";
-                }
-                vertMenu.style.display = flag ? "block" : "none";
-            },
-            toggleSave: function(flag, f2) {
-                if (isSnippetor)
-                    return;
-                var saveIt = findById("snippetor-save-action");
-                saveIt.style.display = flag ? "block" : "none";
-
-                var editS = findById("snippetor-edit-action");
-                editS.style.display = f2 ? "block" : "none";
-                // working state
-                if (flag || f2)
-                    ns.extApi.state = "edit";
-            },
-            toggleCreate: function(flag) {
-                if (isSnippetor)
-                    return;
-                var closeIt = findById("snippetor-create-action");
-                closeIt.style.display = flag ? "block" : "none";
-                var inputWrapper = findById("snippetor-input-action-wrapper");
-                inputWrapper.style.display = flag ? "block" : "none";
-                // waiting for craete
-                if (flag)
-                    ns.extApi.state = "create";
-                else {
-                    console.log(inputWrapper);
-                    inputWrapper.value = "";
-                }
-            },
-            ///////////////////////////////////////////////
-            //
-            // Snippet list change observer
-            //
-            ///////////////////////////////////////////////
-            //
-            // Close current snippet on save
-            //
-            onSaveSnippet: function(payload) {
-                console.log("SAVE SNIPPET HANDLE WIT CLOSE ");
-
-                if (ns.extApi.isWorkingSnippet(payload))
-                  this.closeCurrentSnippet();
-
-                // Remove snippet from the menu list, because it is not draft anymore
-                ns.extApi.onSaveSnippet(payload.working);
-                this.refreshVertMenu();
-
-            },
-            //
-            // Add snippet to the list of snippets on create
-            //
-            onCreateSnippet: function(payload) {
-                // refresh the list of snippets in the menu
-                ns.extApi.snippetsList[payload.working] = payload.snippet;
-                this.refreshVertMenu();
-            },
-            onEditStateSnippet: function(payload) {
-              ns.extApi.snippetsList[payload.working].isModified = payload.isModified;
-
-              if (payload.working == ns.extApi.workingSnippetId) {
-                var isMod = payload.isModified ? true : false;
-                ns.uiApi.toggleSave(isMod, !isMod);
-                //this.changeEditMode(payload.isModified);
-              }
-            },
-            onOpenSnippet: function(payload) {
-                // refresh the list of snippets in the menu
-                // TODO: split draft snippets and opened snippets
-                if (payload.working != ns.extApi.workingSnippetId) {
-                    ns.extApi.snippetsList[payload.working] = payload.snippet;
-                    // refresh vertical menu items
-                    this.refreshVertMenu();
-                }
-            },
-            ///////////////////////////////////////////////
-            //
-            // Handle working snippet changes
-            //
-            ///////////////////////////////////////////////
-            onAddItem: function(payload) {
-                ns.extApi.snippetsList[payload.working].items.splice(payload.index, 0, payload.item);
-                ns.extApi.items.splice(payload.index, 0, payload.item);
-                // update snippet item UI if it was current item
-                if (payload.working == ns.extApi.workingSnippetId) {
-                    // add to the end of the existing list
-                    if (payload.index == ns.extApi.snippetsList[payload.working].items.length - 1) {
-                        this.showNewItem(payload.item.url, payload.item.line, payload.item.comment, true, false);
-                    } else {
-                        // inser into the middle therefore we need to refresh list
-                        ns.uiApi.refreshItemsUiList();
-                    }
-                }
-            },
-            onUpdateItem: function(payload) {
-                // update value
-                ns.extApi.snippetsList[payload.working].items[payload.payload.idx].comment = payload.payload.item.comment;
-                ns.extApi.items[payload.payload.idx].comment = payload.payload.item.comment;
-                // TODO: update bubbleUI
-            },
-            onMoveItem: function(payload) {
-                console.dir(payload);
-                console.dir(ns.extApi.snippetsList);
-                console.dir(ns.extApi.items);
-                // Update snipettor cached data
-                var item = ns.extApi.snippetsList[payload.working].items[payload.payload.oldIndex];
-                console.dir(item);
-                ns.extApi.snippetsList[payload.working].items.splice(payload.payload.oldIndex, 1);
-                ns.extApi.snippetsList[payload.working].items.splice(payload.payload.newIndex, 0, item);
-
-                // update snippet item UI if it was current item
-                if (payload.working == ns.extApi.workingSnippetId) {
-                    // swap status if it is the same items
-                    ns.extApi.items.splice(payload.payload.oldIndex, 1);
-                    ns.extApi.items.splice(payload.payload.newIndex, 0, item);
-                    console.dir(ns.extApi.items);
-                    // inser into the middle therefore we need to refresh list
-                    ns.uiApi.refreshItemsUiList();
-                }
-            },
-            onRemoveItem: function(payload) {
-                ns.extApi.snippetsList[payload.working].items.splice(payload.payload.index, 1);
-                if (payload.working == ns.extApi.workingSnippetId) {
-                    ns.extApi.items.splice(payload.payload.index, 1);
-                    ns.uiApi.refreshItemsUiList();
-                    console.log("TODO: check if it bubble dialog is opened");
-                }
-            },
-            onUpdateItem: function(payload) {
-                ns.extApi.snippetsList[payload.working].items[payload.payload.index] = payload.item;
-                if (payload.working == ns.extApi.workingSnippetId) {
-                    ns.extApi.items[payload.payload.index] = payload.item;
-                    console.log("TODO: check if it bubble dialog is opened");
-                }
+      },
+      saveSnippet: function(callback) {
+        chrome.runtime.sendMessage({
+          type: "saveSnippet"
+        }, function(response) {
+          console.log("Snippet saved probably");
+          if (callback)
+            callback(response);
+        });
+      },
+      addNewItem: function(idx, item, callback) {
+        chrome.runtime.sendMessage({
+          type: "addNewItem",
+          payload: {
+            item: item,
+            index: idx
+          }
+        }, function(response) {
+          ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(idx, 0, item);
+          if (callback)
+            callback(response);
+        });
+      },
+      updateItemComment: function(idx, comment) {
+        chrome.runtime.sendMessage({
+          type: "updateItem",
+          payload: {
+            idx: idx,
+            item: {
+              comment: comment
             }
+          }
+        }, function(response) {
+          console.log("snippet has been updated");
+        });
+        this.snippetsList[this.workingSnippetId].items[idx].comment = comment;
+        this.items[idx].comment = comment;
+      },
+      moveIndex: function(payload) {
+        chrome.runtime.sendMessage({
+          type: "moveItem",
+          payload: payload
+        }, function(response) {
+          console.log("snippet has been updated");
+        });
+        // change the position of old item and new item
+        var item = ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(payload.oldIndex, 1);
+        ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(payload.newIndex, 0, item);
+      },
+      closeCurrentSnippet: function() {
+        chrome.runtime.sendMessage({
+          type: "closeCurrentSnippet",
+          payload: ns.extApi.workingSnippetId
+        }, function(response) {
+          console.log("snippet has been unsubscribed");
+        });
+        // reset state to the IDLE
+        ns.extApi.workingSnippetId = null;
+        ns.extApi.extensionWorkingItemId = undefined;
+        ns.extApi.state = "idle";
+      },
+      // track if extension initialized
+      // and provided the list of snippets
+      isIniitalized: false,
+      init: function(callback) {
+        chrome.runtime.sendMessage({
+          type: "initialItems",
+          payload: {}
+        }, function(response) {
+          console.dir(response);
+          ns.extApi.isIniitalized = true;
+          ns.extApi.workingSnippetId = response.working;
+          ns.extApi.extensionWorkingItemId = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem : null;
+          ns.extApi.snippetsList = response.snippets;
+          if (callback)
+            callback(response);
+        });
+      },
+
+      /////////////////////  callbacks
+      onAddItem: function(payload) {
+        ns.extApi.snippetsList[payload.working].items.splice(payload.index, 0, payload.item);
+        // update snippet item UI if it was current item
+        if (payload.working == ns.extApi.workingSnippetId) {
+          // add to the end of the existing list
+          ns.uiApi.onAddItem(ns.extApi.snippetsList[payload.working].items[payload.index], payload.index);
+        }
+      },
+      onRemoveItem: function(payload) {
+        var removed = ns.extApi.snippetsList[payload.working].items.splice(payload.payload.index, 1);
+        if (payload.working == ns.extApi.workingSnippetId) {
+          ns.uiApi.onRemoveItem(removed);
+        }
+      },
+      onUpdateItem: function(payload) {
+        ns.extApi.snippetsList[payload.working].items[payload.payload.index] = payload.item;
+        if (payload.working == ns.extApi.workingSnippetId) {
+          ns.uiApi.onUpdateItem(payload.item, payload.payload.index);
+        }
+      },
+      onMoveItem: function(payload) {
+        // Update snipettor cached data
+        var item = ns.extApi.snippetsList[payload.working].items[payload.payload.oldIndex];
+        ns.extApi.snippetsList[payload.working].items.splice(payload.payload.oldIndex, 1);
+        ns.extApi.snippetsList[payload.working].items.splice(payload.payload.newIndex, 0, item);
+
+        // update snippet item UI if it was current item
+        if (payload.working == ns.extApi.workingSnippetId) {
+          // swap status if it is the same items
+          ns.uiApi.onMoveItem(payload.payload.oldIndex, payload.payload.newIndex);
+        }
+
+      }
+    };
+
+    // all the code below extend the standard UI of the page
+    // So, we do not need to extend the UI of snipettor page
+    if (isSnippetor)
+      return;
+
+    ns.uiBubbleApi = {
+      bubbleElement: null,
+      removeBubble: function() {
+        if (this.bubbleElement != null)
+          this.bubbleElement.remove();
+      },
+      //
+      // Remove previous bubble element and create a new one
+      // and subscribe for a dialog event
+      // @param payload - line number, comment, etc
+      // @param style - css style to fixup position of the bubble UI
+      // @param callbacks - {onEditDone: function() {},
+      //                     onEditStart: function() {},
+      //                     onEditCancel: funciton() {},
+      //                     onBubbleClose: function() {}}
+      //
+      _getBubbleUi: function(payload, styleData, callbacks) {
+        // remove previos bubble if exists
+        this.removeBubble();
+        // Create a new bubble element and configure it
+        // TBD: use nano for a template handling
+        this.bubbleElement = payload.isNewItem ?
+                             this._getNewBubbleTemplate(payload) :
+                             this._getBubbleTemplate(payload);
+
+        this.bubbleElement.appendTo("body");
+
+        // change style for this element
+        styleData.position = "absolute";
+        $("#snipettor-bubble-dialog-new").css(styleData);
+
+        // Sync -up component and model with an old jQuery style
+        payload.isNewItem ? this._configureNewBubbleBehavior(callbacks) :
+                            this._configureBubbleBehavior(callbacks);
+      },
+      _getBubbleTemplate: function(payload) {
+        return $('<div id="snipettor-bubble-dialog-new" class="bubble-comment active" style="display: block;">\
+                            <a class="bubble-close"></a>\
+                            <div class="comment">' + (payload.comment || '') + '</div>\
+                            <div class="textarea-area" style="display:none;"><textarea></textarea></div>\
+                            <div class="bubble-buttons left-sided">\
+                                <a class="bubble-save">Save Changes</a>\
+                                <a class="bubble-cancel">Cancel</a>\
+                            </div>\
+                            <div class="bubble-clean-buttons">\
+                                <a class="bubble-edit">Edit Comment</a>\
+                                <a class="bubbleLeft"></a>\
+                                <a class="bubbleRight"></a>\
+                            </div>\
+                            <div class="clearfix"></div>\
+                        </div>');
+      },
+      _getNewBubbleTemplate: function(payload) {
+        return $('<div id="snipettor-bubble-dialog-new" class="bubble-comment add-comment active" style="display: block;">\
+                            <a class="bubble-close"></a>\
+                            <textarea placeholder="Enter your comment here.."></textarea>\
+                            <div class="bubble-buttons">\
+                                <a class="bubble-cancel">Cancel</a>\
+                                <a class="bubble-save">Save</a>\
+                            </div>\
+                        </div>');
+      },
+      _configureNewBubbleBehavior: function(callbacks) {
+        var that = this;
+        //
+        // CLOSE comment bubble UI
+        //
+        this.bubbleElement.find(".bubble-close").click(function(e) {
+          e.preventDefault();
+          that.workingBubble.remove();
+          // Notify that bubble was closed
+          if (callbacks.onBubbleClose)
+            callbacks.onBubbleClose();
+          // Remove UI bubble element
+          that.removeBubble();
+        })
+        //
+        // CANCEL comment edit
+        //
+        this.bubbleElement.find(".bubble-cancel").click(function(e) {
+          e.preventDefault();
+          // Notify on edit start
+          if (callbacks && callbacks.onBubbleClose)
+            callbacks.onBubbleClose();
+          // Remove UI bubble element
+          that.removeBubble();
+        });
+        //
+        // SAVE new comment
+        //
+        this.bubbleElement.find(".bubble-save").click(function(e) {
+          e.preventDefault();
+          var comment = $(this).parent().parent().children("textarea").val();
+
+          // Notify on edit complete
+          if (callbacks && callbacks.onEditDone)
+            callbacks.onEditDone(comment);
+
+          // close bubble anyway
+          if (callbacks && callbacks.onBubbleClose)
+              callbacks.onBubbleClose();
+
+          // Remove UI bubble element
+          that.removeBubble();
+        });
+
+      },
+      //
+      // CONFIGURE A NEW BUBBLE UI ELEMENT
+      //
+      // @param callbacks - {onEditDone: function() {},
+      //                     onEditStart: function() {},
+      //                     onEditCancel: funciton() {},
+      //                     onBubbleClose: function() {}}
+      _configureBubbleBehavior: function(callbacks) {
+
+        /*          //          findById("snipettor-bubble-dialog-textarea").value = that.currentItem.comment || "";
+                  // Subscribe for SAVE button
+                  findById("snipettor-bubble-dialog-save", "click", function(e) {
+                    // read current value and reset input
+                    var r = findById("snipettor-bubble-dialog-textarea").value;
+                    findById("snipettor-bubble-dialog-textarea").value = "";
+                    console.log("SAVE BUBBLE !!!: " + that.currentItem.line)
+                    if (that.currentItem.idx != undefined) {
+                      ns.uiApi.updateItemComment(that.currentItem.idx, r);
+                    } else {
+                      ns.uiApi.showNewItem(that.currentItem.url, that.currentItem.line, r, false, false, true);
+                    }
+                    that.bubbleElement.style.display = "none";
+                  });
+          */
+        var workingBubble = this.bubbleElement;
+        var that = this;
+
+        //
+        // CLOSE comment bubble UI
+        //
+        this.bubbleElement.find(".bubble-close").click(function(e) {
+          e.preventDefault();
+          // Notify that bubble was closed
+          if (callbacks.onBubbleClose)
+            callbacks.onBubbleClose();
+          that.removeBubble();
+        })
+        //
+        // CANCEL comment edit
+        //
+        this.bubbleElement.find(".bubble-cancel").click(function(e) {
+          e.preventDefault();
+          var $textComment = $(this).parent().siblings(".textarea-area");
+          var $comment = $(this).parent().siblings(".comment");
+
+          $textComment.hide();
+          $comment.fadeIn(200);
+
+          $(this).parent().parent().removeClass("add-comment");
+          $(this).parent().hide();
+
+          // Notify on edit start
+          if (callbacks && callbacks.onEditCancel)
+            callbacks.onEditCancel($comment.text(), $textComment.children("textarea").val());
+        })
+
+        //
+        // SAVE changed comment
+        //
+        this.bubbleElement.find(".bubble-save").click(function(e) {
+          e.preventDefault();
+          var $textComment = $(this).parent().siblings(".textarea-area");
+          var $comment = $(this).parent().siblings(".comment");
+          var content = $textComment.children("textarea").val();
+          var oldContent = $comment.text();
+          $comment.text(content);
+          $textComment.hide();
+          $comment.fadeIn(200);
+          // Tricky css to hide/show next-prev buttons,
+          // may be it is good to do the same for Save/Cancel
+          // But in that case we have to remove fadeIn/Out effects
+          $(this).parent().parent().removeClass("add-comment");
+          $(this).parent().hide();
+
+          // Notify on edited comment saved
+          if (callbacks && callbacks.onEditDone)
+            callbacks.onEditDone(content, oldContent);
+        })
+
+
+        this.bubbleElement.find(".bubble-edit").click(function(e) {
+          e.preventDefault();
+          var $comment = $(this).parent().siblings(".comment");
+          var content = $comment.text();
+          $comment.hide();
+          $(this).parent().parent().addClass("add-comment");
+          $(this).parent().siblings(".textarea-area").fadeIn().children("textarea").val(content);
+          $(this).parent().siblings(".bubble-buttons").fadeIn(200);
+
+          // Notify on edited comment started
+          if (callbacks && callbacks.onEditStart)
+            callbacks.onEditStart(content);
+        })
+
+        return this.bubbleElement;
+      },
+      //
+      // configure next prev navigation
+      // based on arguments provided by ns.uiApi
+      configureNextAndPrev: function(config) {
+        // Do nothing if there is no active bubble element
+        if (this.bubbleElement == null)
+          return;
+
+        // Handle Next/Prev elements visibility
+        var next_element = $("a.bubbleRight"),
+          prev_element = $("a.bubbleLeft");
+        // Handle prev state
+        if (config.isPrevVisisble()) {
+          prev_element
+            .attr("display", "block")
+            .click(function(e) {
+              e.stopPropagation();
+              e.preventDefault();
+              config.onPrevClick();
+            })
+        } else {
+          prev_element.attr("display", "none");
+        }
+
+        if (config.isNextVisible()) {
+          next_element
+            .attr("display", "block")
+            .click(function(e) {
+              e.stopPropagation();
+              e.preventDefault();
+              config.onNextClick();
+            })
+        } else
+          next_element.attr("display", "none");
+      }
+    };
+
+    ns.uiApi = {
+      url: null,
+      //
+      // Show an initial bubble of the snippet page open
+      //
+      showInitialBubble: function() {
+        //
+        // Do nothing if initial bubble already show
+        // It happens because of multiple call of
+        // this method. We have no idea when all code will be on place
+        // but want to show bubble ASAP
+        if (this.showInitialBubbleRequestDone || !ns.extApi.isIniitalized)
+          return;
+
+        var item = ns.extApi.getWorkingItem();
+        // skip bubble show on empy element
+        if (item == undefined)
+          return;
+
+        // Handle navigation
+        // TBD: this._NextPrevHelper(true, true);
+
+        var line = getLineIndexElementByLineNumber(item.line);
+        // Suppose that there is no 0 line
+        if (!line) {
+          console.log("Could not file line: " + item.line + '. Retry');
+          return;
+        }
+        // indicates that we shown bubble UI of first start
+        this.showInitialBubbleRequestDone = true;
+
+        ///////////////////// CREATE BUBBLE AT THE POSITION
+        // Get possition of line in the code
+        var absPos = line.getBoundingClientRect();
+
+        // Handle UI element position
+        var bubbleElement = ns.uiBubbleApi._getBubbleUi(item, {
+          top: (absPos.top + 20 + document.scrollingElement.scrollTop) + "px",
+          left: (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px",
+          display: "block"
+        }, this);
+        // There is no page redirect support for a while
+        // therefore we have to show only new bubble,
+        // or initial bubble items
+        this._NextPrevHelper(true, true);
+      },
+      _NextPrevHelper: function(isSavedItem, isInitial) {
+        if (!isInitial)
+          return;
+
+        ns.uiBubbleApi.configureNextAndPrev({
+          isPrevVisisble: function() {
+            // Not saved item should not have next and prev navigation
+            // if it is the last item, then do not show prev
+            return isSavedItem && (ns.extApi.extensionWorkingItemId > 0);
+          },
+          isNextVisible: function() {
+            var len = ns.extApi.snippetsList[ns.extApi.extensionWorkingItemId].items.length;
+            // Not saved item should not have next and prev navigation
+            // do not show next item if there is no more items to show
+            return isSavedItem && (ns.extApi.extensionWorkingItemId < len - 1);
+          },
+          onPrevClick: function() {
+            if (ns.extApi.extensionWorkingItemId > 0) {
+              ns.extApi.extensionWorkingItemId--;
+              ns.extApi.openSnippetItem(ns.extApi.extensionWorkingItemId);
+            } else {
+              // we should never get into this else
+            }
+          },
+          onNextClick: function() {
+            var len = ns.extApi.snippetsList[ns.extApi.extensionWorkingItemId].items.length;
+            if (ns.extApi.extensionWorkingItemId < len - 1) {
+              ns.extApi.extensionWorkingItemId++
+                ns.extApi.openSnippetItem(ns.extApi.extensionWorkingItemId);
+            } else {
+              // somthing goes wrong, but we hanle it anyway
+            }
+          }
+        }); // bubble ui next/prev config
+      },
+      //
+      // Show input bubble at UI position
+      //
+      showBubble: function(evt, url, line) {
+        // Do nothing if snippet was not named
+        this.currentItem = ns.extApi.getWorkingItem();
+        if (!this.currentItem)
+          return;
+
+        this.currentItem = {
+          url: url,
+          line: line,
+          isNewItem: true, // true or undefined
+          isModified: undefined // undefined + isNewItem - means absolutely new item
+          // true + isNewItem - means modify a new itemm which was not saved
         };
 
-        $('\
-<ul id="menu-dddd">\
-  <li><a id="snippetor-toggle-menu" class="active">S</a></li>\
-  <li><a id="snippetor-save-action" style="display:none;">Save</a></li>\
-  <li><a id="snippetor-edit-action" style="display:none;">Edit</a></li>\
-	<li><a id="snippetor-create-action" >Create</a></li>\
-	<li><a id="snippetor-input-action-wrapper"><input id="snippetor-input-action" placeholder="Draft name please ..."></a></li>\
-	<ul id="menu-snippets-list">\
-	</ul>\
-  <li style="float:right"><a id="snipettor-close-action">[x]</a></li>\
-</ul>\
-<div id="snipettor-bubble-dialog">\
-  <textarea id="snipettor-bubble-dialog-textarea"></textarea>\
-  <br>\
-  <button id="snipettor-bubble-dialog-prev" style="float:left;">Prev</button>\
-  <button id="snipettor-bubble-dialog-next" style="float:left;">Next</button>\
-  <button id="snipettor-bubble-dialog-save">Save</button>\
-  <button id="snipettor-bubble-dialog-cancel">Cancel</button>\
-</div>').appendTo(document.body);
+        var bubbleElement = ns.uiBubbleApi._getBubbleUi(this.currentItem, {
+          top: (evt.pageY + 20) + "px",
+          left: (evt.pageX + 10) + "px",
+          display: "block"
+        }, this);
 
-        $('<ul id="snippetor-vertical-menu"></ul>').appendTo(document.body);
+        // it is brand new item1
+        // therefore no fwd and backward support
+        this._NextPrevHelper(false, false);
 
-        ns.uiApi.init();
+        evt.stopPropagation();
+      },
+      ////////////////// BUBBLE UI CALLBACKS handling
+      onBubbleClose: function() {
+        // nothing changed but reset current item
+        this.currentItem = null;
+      },
+      onEditStart: function() {
+        // 1. Check if current snippet does not have edit state
+        //    then change the current state
+      },
+      onEditCancel: function() {
+        // 1. Return an original edit state for the snippet ui element
+        //    the major comment is to move to not modified state`
+      },
+      onEditDone: function(newComment, oldComment) {
+        if (this.currentItem) {
+          if (oldComment != undefined)
+            console.log("Error: expected no old comment value for a new comment");
+          this.currentItem.comment = newComment;
+          // indicates that next time we should open it via next-prev dialog
+          // bubble but anyway it is still has isNewItem comment flag equal true
+          this.currentItem.isModified = true;
+          // Lets update snippet background model
+          //
+          // Notify all extension's subscribes about new item
+          ns.extApi.saveNewItemAtCurrentPosition(this.currentItem);
+        }
+        else {
+          ns.extApi.updateCommentForCurrentSnippetItem(newComment);
+        }
 
-        // Close icon
-        var snippetorCloseAction = findById("snipettor-close-action", "click", function(e) {
-            e.stopPropagation();
-            ns.uiApi.closeCurrentSnippet();
-        }); // On click handler
+      },
 
-        var saveAction = findById("snippetor-save-action", "click", function(e) {
-            e.stopPropagation();
-            ns.extApi.saveSnippet();
+
+      //
+      // Update comment via bubble UI element
+      updateItemComment: function(idx, comment) {
+        // Do nothing if snippet was not named
+        if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
+          return;
+        ns.extApi.updateItemComment(idx, comment);
+      },
+      // List of snippets
+      snippetsList: null,
+      // Current index of snippet item
+      current_index: 0,
+      carouselReInit: function() {
+        var topSlider = $('.snippetor-ui .owl-carousel').owlCarousel({
+          loop:false,
+          nav: false,
+          responsive: {
+            0: {
+              items: 1
+            },
+            600: {
+              items: 2
+            },
+            800: {
+              items: 3
+            },
+            1000: {
+              items: 4
+            },
+            1300: {
+              items: 5
+            }
+          },
+          dots: false
         });
 
-        var editAction = findById("snippetor-edit-action", "click", function(e) {
-            e.stopPropagation();
-            ns.extApi.saveSnippet();
+        $(".snippetor-ui .goLeft").click(function(e) {
+          e.preventDefault();
+          topSlider.trigger('prev.owl.carousel');
+        })
+
+        $(".snippetor-ui .goRight").click(function(e) {
+          e.preventDefault();
+          topSlider.trigger('next.owl.carousel');
         });
 
+      },
+      //
+      // Show new snippet item on the top list menu
+      //
+      showNewItem: function(url, line, comment, isInit, skipSubsciption, isActive) {
+        this.current_index++;
+        //
+        // Hide previous active items
+        //
+        if (isActive) {
+          var activeItems = document.getElementsByClassName("snipettor-active-menu-item");
+          for (var i = 0; i < activeItems.length; ++i)
+            activeItems[i].classList.remove("snipettor-active-menu-item");
+        }
+        // Last 20 symbols of file path + name
+        var payload = url.length > 20 ? url.substr(url.length - 20) : url;
+        // Add item to the List of snippets
+        $('<div class="item modified ' + (isActive ? 'active' : '') + '">\
+              <div class="file">' + payload + '</div><!--\
+              --><span>line: <b>' + line + '</b></span>\
+              <a class="remove"></a>\
+              </div>').appendTo("div.owl-carousel");
 
+        //
+        //
+          /*          if (false && typeof SnippetSortable !== 'undefined') {
+                      SnippetSortable.create(this.snippetsList, {
+                        delay: 100,
+                        onEnd: function(evt) {
+                          ns.extApi.moveIndex({
+                            oldIndex: evt.oldIndex,
+                            newIndex: evt.newIndex
+                          });
+                        }
+                      });
+                    } // check if exists
+          */
+
+        console.log("Show new item: " + url);
+      },
+      init: function() {
+        ns.extApi.init(function() {
+          if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
+            ns.uiApi.refreshItemsUiList();
+            // Force change
+            var isMod = ns.extApi.snippetsList[ns.extApi.workingSnippetId].isModified;
+            console.log("IS MODIFIED ? " + isMod);
+            ns.uiApi.toggleSave(isMod, !isMod);
+            ns.uiApi.toggleCreate(false);
+          } else {
+            ns.uiApi.toggleSave(false, false);
+            ns.uiApi.toggleCreate(false);
+          }
+
+          ns.uiApi.toggleVMenu(false);
+          //
+          // Work-around for a S-menu toggle: we need to toggle vertical when user do nothing with snippet
+          // and horizontal otherwise.
+          // So we need to minimize menu on start in case which described above
+          //
+          if (ns.extApi.workingSnippetId == null && ns.extApi.workingSnippetId == undefined) {
+            if (!isSnippetor) {
+              //snippetorToggleAction.style.width = "42px";
+              //snippetorToggleAction.style.height = "49px";
+            }
+          }
+          ns.uiApi.refreshVertMenu();
+        });
+      },
+      //
+      // Change an edit mode of the opened snippet
+      //
+      changeEditMode: function(isModified) {
+        if (isModified) {
+          $("#snippetor-edit-action").hide();
+          $("#snippetor-save-action").show();
+        } else {
+          $("#snippetor-edit-action").show();
+          $("#snippetor-save-action").hide();
+        }
+      },
+      refreshVertMenu: function() {
+        if (isSnippetor)
+          return;
+        var vertMenu = findById("snippetor-vertical-menu");
+        if (vertMenu) {
+          // Empty previous value
+          //vertMenu.innerHTML = '<li><a id="snipettor-create-item">Create</a></li>';
+
+          for (var t in ns.extApi.snippetsList) {
+            var snippet = ns.extApi.snippetsList[t];
+            if (snippet) {
+              //  vertMenu.innerHTML += '<li><a snippet_item="' + t + '" class="snipettor-select-menu-item">' + (snippet.title || 'no title') + '</a></li>';
+            }
+          }
+          findById("snipettor-create-item", "click", function(e) {
+            //  ns.uiApi.toggleCreate(true);
+            //            ns.uiApi.toggleVMenu(false);
+            // hide top line
+            findById("menu-dddd").dispatchEvent(new Event("click"));
+          });
+
+          var snippetDrafts = document.getElementsByClassName("snipettor-select-menu-item");
+          for (var x = 0; x < snippetDrafts.length; ++x) {
+            snippetDrafts[x].addEventListener("click", function(e) {
+              var index = parseInt(this.attributes["snippet_item"].value);
+              console.log("ITEM IS:" + index);
+              ns.uiApi.openSnippet(index);
+            });
+          }
+        } // vertical menu
+      },
+      //
+      // Re-draw and subscribe on UI list again
+      //
+      refreshItemsUiList: function() {
+        if (isSnippetor)
+          return;
+        var snippetsList = findById("menu-snippets-list");
+        //snippetsList.innerHTML = '';
+        if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
+          // update according to the modified state
+          var isMod = ns.extApi.snippetsList[ns.extApi.workingSnippetId].isModified;
+          // clean current carousel and refresh it
+          $('.snippetor-ui .owl-carousel')
+          .owlCarousel('destroy')
+          .empty()
+          .removeClass("owl-loaded")
+          .removeClass("owl-drag");
+
+          // Add all snippet items
+          for (var x in ns.extApi.snippetsList[ns.extApi.workingSnippetId].items) {
+            console.log("POST INIT: []" + x);
+            var tmp = ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[x];
+            var isActive = x == ns.extApi.extensionWorkingItemId;
+            ns.uiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false, isActive);
+          }
+          // reinit carousel on load complete
+          this.carouselReInit();
+
+          var navigation = $(".owl-item");
+          // replace on map function
+          for (var v = 0; v < navigation.length; v++) {
+            navigation[v].addEventListener('click', (function(payload) {
+              var pl = payload;
+              return function(e) {
+                e.stopPropagation();
+                ns.extApi.openSnippetItem(pl);
+              };
+            })(v));
+          }
+        }
+      },
+      openSnippet: function(idx) {
+        // open top menu on save mode
+        ns.uiApi.toggleCreate(false);
+        ns.uiApi.toggleVMenu(false);
+
+        ns.extApi.openSnippet(idx);
+        // refresh snippets on open
+        ns.uiApi.refreshItemsUiList();
+
+        // hide top line
+        findById("menu-dddd").dispatchEvent(new Event("click"));
+      },
+      closeCurrentSnippet: function() {
+        // hide top line
+        findById("menu-dddd").dispatchEvent(new Event("click"));
+
+        // hide all menus
+        ns.uiApi.toggleSave(false, false);
+        ns.uiApi.toggleCreate(false);
+        ns.uiApi.toggleVMenu(false);
+
+        this.snippetsList = findById("menu-snippets-list");
+        //this.snippetsList.innerHTML = "";
+        //        if (this.bubbleElement)
+        //          this.bubbleElement.style.display = "none";
+
+        // Notify extension about snippet close for the current tab
+        ns.extApi.closeCurrentSnippet();
+      },
+      toggleVMenu: function(flag) {
+        return;
+        if (isSnippetor)
+          return;
+        var vertMenu = findById("snippetor-vertical-menu");
+        if (flag == undefined) {
+          flag = vertMenu.style.display == "none";
+        }
+        vertMenu.style.display = flag ? "block" : "none";
+      },
+      toggleSave: function(flag, f2) {
+        return;
+        if (isSnippetor)
+          return;
+        var saveIt = findById("snippetor-save-action");
+        saveIt.style.display = flag ? "block" : "none";
+
+        var editS = findById("snippetor-edit-action");
+        editS.style.display = f2 ? "block" : "none";
+        // working state
+        if (flag || f2)
+          ns.extApi.state = "edit";
+      },
+      toggleCreate: function(flag) {
+        return;
+        if (isSnippetor)
+          return;
+        var closeIt = findById("snippetor-create-action");
+        closeIt.style.display = flag ? "block" : "none";
+        var inputWrapper = findById("snippetor-input-action-wrapper");
+        inputWrapper.style.display = flag ? "block" : "none";
+        // waiting for craete
+        if (flag)
+          ns.extApi.state = "create";
+        else {
+          console.log(inputWrapper);
+          inputWrapper.value = "";
+        }
+      },
+      ///////////////////////////////////////////////
+      //
+      // Snippet list change observer
+      //
+      ///////////////////////////////////////////////
+      //
+      // Close current snippet on save
+      //
+      onSaveSnippet: function(payload) {
+        console.log("SAVE SNIPPET HANDLE WIT CLOSE ");
+
+        if (ns.extApi.isWorkingSnippet(payload))
+          this.closeCurrentSnippet();
+
+        // Remove snippet from the menu list, because it is not draft anymore
+        ns.extApi.onSaveSnippet(payload.working);
+        this.refreshVertMenu();
+
+      },
+      //
+      // Add snippet to the list of snippets on create
+      //
+      onCreateSnippet: function(payload) {
+        // refresh the list of snippets in the menu
+        ns.extApi.snippetsList[payload.working] = payload.snippet;
+        this.refreshVertMenu();
+      },
+      onEditStateSnippet: function(payload) {
+        ns.extApi.snippetsList[payload.working].isModified = payload.isModified;
+
+        if (payload.working == ns.extApi.workingSnippetId) {
+          var isMod = payload.isModified ? true : false;
+          ns.uiApi.toggleSave(isMod, !isMod);
+          //this.changeEditMode(payload.isModified);
+        }
+      },
+      onOpenSnippet: function(payload) {
+        // refresh the list of snippets in the menu
+        // TODO: split draft snippets and opened snippets
+        if (payload.working != ns.extApi.workingSnippetId) {
+          ns.extApi.snippetsList[payload.working] = payload.snippet;
+          // refresh vertical menu items
+          this.refreshVertMenu();
+        }
+      },
+      ///////////////////////////////////////////////
+      //
+      // Handle working snippet changes
+      //
+      ///////////////////////////////////////////////
+      onAddItem: function(payload, index) {
+          ns.uiApi.refreshItemsUiList();
+      },
+      onMoveItem: function(payload) {
+          ns.uiApi.refreshItemsUiList();
+      },
+      onRemoveItem: function(payload) {
+          ns.uiApi.refreshItemsUiList();
+      },
+      onUpdateItem: function(payload) {
+          console.log("TODO: check if it bubble dialog is opened");
+      }
+    };
+
+    $('\
+    <div class="snippetor-ui">\
+        <div class="navigation">\
+            <div class="brand">\
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAANjSURBVHic7Zo/TBRBGMUfd+ZCTpHDgiCHFRUmJlZUGAs1JtJIQkF1HSWNdMaCisqEigorKjo7sZBKEggV0UL+FMQYGhMtjIbkYnwWe0fWudm9vZ359pvEe8kWu9l9b97v7jZ7MztAEv+zStoD0FYfgPYAtNUHoD0AbfUBaA9AWyECaAD4BuA9gBcAhiTDBgJ8EPoA4E5s/xWARamw0L4Bt/BveQD4IRkYGoAnlmNvJANDB/AT0b1ATCEBqAB4YBx7B6ApGeoDQA3APICqo899AFeNY0lf/2ors+aYCZB02cZIfmKkfZLDDl5r7FTdct5wK4ut7DGXDr7Kt7VPspLT79jwOrScU4mVb8sJQt7yN0ke0a6ZHH6TFp9Vy3kzCZlHrTEVAiCt/FuS5RyeSxYvG8hyK8MbBN/lB3OUB8ltw+s7k0EO+oQQQvkqyQvDb6vLNd4g9FLevEn5KA+SsxbPRobr0iAcZ4WQZYDjguVBct3w/ENyNOO13SCMuwKQLg+SZ4bvQY/XO0HoVv5EuPyUxXslh08ahJM0CJrlQXLZ4j+d0ysXBJtRvaDyILlj+H8lWXLw6wah49Fas/wQyaaRsenBtycIZvnTgsqD5JwlZ8GTdxqE0zgErfIguWHk/CY54tE/EwSQnFAoD5LnRtauQEY3CBMguadQ/q4l77lQVhqEPa0pscInPxNFnZ/ArpFzrvDpX/4EwGJvgiOMbnhxbSiUv7wJFg1hweI/p1HeBNCGIP0gtGn4Nhk9FBVRPvVBqAgIJUaPu3HtaJVPAgDK/RmatvgtF1Q+858hSQgrFq8prfLdALQh+JwQOTA8zoTLO02I+IYwymi6K651zfJZAYB+JkUblmtnBct7mxSNQ3CZFt8yrrlgNCXuu7zItLgrhDKjxY64trXL5wGQBYJtRce2preUI1t9aSwLBNua3qrlvMkcuUEsjra3XpbHD43zjnNmBrM8boOQ9IJEnZ1ac8gM5gWJ9lYjOc/kO/qiBcAjx8xqK7PmOv4iXpR8DeBpbP8XgBsQfvkpq6SnxCoAHhrHdhBIeUAewD0A14xjOnN/CZIGEM7kZ4KkAVw39j8C+CKc2ZOuCPs/A/AZwGMAtwG8FM7rWSG+Ll+oQnpXWEV9ANoD0FYfgPYAtNUHoD0Abf0FwgHK57mLy2kAAAAASUVORK5CYII=">\
+                    <span>Snippetor</span>\
+                    <ul class="dropdown-menu">\
+                        <li><a id="createNewSnippetButton"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAGKSURBVFiF7Ze7SgNREIa/31tpNE8gYpNCUbC0CNiopaSxsjAGfItY+gQ29jY+goVYaWMhSpr0NkkkaiPGjIUHicteszmYwh+GhT2zM98Mc85yMDMGDagBbcBy2AtQCcYOM7mkP5LUAe6BK4bTArAP9IA9M7uI9Q7pgAH1NPRhBpRdjCfgI6kTE0NWmUaHwA1wLqkS5eQT4A3YToLwAfDunmvAOnACtCIhPMzAJPBI+O54DfpPjbp8M/uUtAysAjMDS1XgIOg/cgAH0QfuBt9J2grz9TmEqZTYAUlF4AwoZozdAapm1olzGv8OuAp2fQGMfwcAJJWAQsbYXTNr5AaQtMT33zHrlu1JKplZMxeAmTUlbQDzGQGek5KnAnAQtxmTp9b4D6GkAnDKcAfRkZl1cwEA08Ccsyzqu29jlWYIW8BOxuSpNf4zACBpEZiNWH4ws543AHcQNWJ868CxNwB3EG0SvQsuh02eCsBBXOdJEqc/H8J/AB+X0yiVgRUz+z3Mnq7nYdYGasF8X7nuZR2F1xitAAAAAElFTkSuQmCC"> <b>Create New Snippet</b></a></li>\
+                        <li><a><img src="data:image/png;base64,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"> <b>Snippetor Website</b></a></li>\
+                        <li><hr></li>\
+                        <li><a><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAHfSURBVFiFzdfPi05hFAfwzxkzaSjNKGElykKyoUZWmgVlM2myoBhZzd5G7Oxs7PwF41UWlJpkOzaUkp1YmFJ+FYUyjUEdi/e9um63vMO98/rWWdzz3O75nu9zznmeG5lpkBgaaHQMQ0SMYn0f7y9n5krTJC7jG7IPe4rRzNSUBb5ib2a++BPTiJjHm8ycbVKBxFg/bLEFbzHdlALDq2Ka+T4izqETERvwY5XJvsP9LLVe9BQYz8xP/X4lIi7i8CqDw27cyswLZWffW/CvhmN4Uvat9RxIXdV/4f8YRHWIiLPY03C8ndgeEVewgk5tEUbEJUxhoWECZWzFfipFiHW6vX6o5YKcxGJdDRzFl8x82GL2MINOXQ3MoNNm5N7hN40DlLYAm7CEXS3LfwoP6ubACd1BsdimAroqzxUPZQUWMNty9tt6Ko8XR0JiDDuwXCy0SOA8bteN4tO4m5kf21XfGSX5ywo8x1TL2e/DB4xUFTiIzbi3BtnfzMzvVQVu4FrL2Q/hNSYqfqlblRMtEziCZ1V/sQWvMvPRGsh/veosRvFcdaFJRMRGHNctwt8wpHuxvNMmAZzE48x8Wbd4tUeinx+Tv7XPmKyrjcjMQqKRNlLvYanaegWiaIVBYeCX0p+WyaVtZX4FoAAAAABJRU5ErkJggg=="> <b>Draft Page Title</b></a></li>\
+                        <li><a><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAIvSURBVFiFtddPiE5hFMfxzxmjEJpS0mQhIlGalCizYiHZjGwsjLCxUJSSpYWFhaWNHZmS8mcWrJTNMElpFsqCEBZkoeRP/o2OxTuj23Xft/dt7v3V6d7nPE/3fJ/znNs9V2YqG64ha7ZrVbH6FRQRO3ETi3ASl9Sjw9haNfEPICIeYC3e4SW+Z+anOqJHxPd2c32F+5Vaqf+Fb3UE7kb9pfH7qkURcRZbSu7E6cx8MmeAiFheAVPUOJ5WALyYS3Doj4gLOIKF7RZl5hSm5hqsSn04ivV420SAbgDm40unRRExHhHZo413A9Dp3Ivar8MRtVH51VsTESO4k5nTPQFk5k/87BGgrOU4ix043hNARKzD6h4DvsrM54XxQ1zGueKibo/gBLb3CDCJYxX+6BkgM6seVIs6AeyPiKGa4mzAIJZgZURc1KqpS+0AZr8Rr2sCKD7n/sx1Ba5WAczDMPZm5qOaAP5TROzC7r6KuQ342mTwGY1irCoDfRhrMnJELMYINlZlIJsGwD48zsw3ZYBVmMjM1w0DHFTYZGJAq1I/4nBV81iXaXVeX7E0M5UzsAA3Gt79AdzOzM/4D+BWZnb8NNegUVyZHcwChFYr3nT1b8Yy3C0DDGMa95oE0Cq+q5n5p+hMXMf5houvHx8wVPJL/MCmhgH24EnZP3sEz+ba33ehUW1qLHGq4d0v1Xr3B6t+Tn9jIiIGGtz9IUxm5ruqyTNaHWzdv+NFe49tVdn5C2NDJizw8/hiAAAAAElFTkSuQmCC">\ <b>Modified page</b></a></li>\
+                        <li><a><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAKISURBVFiFtddPiFdVFAfwzxl/hUoOMwQiYqDgohJChCgIRFz0BynaDG2cKYjQlbQQbSetWk7QZnaBgmCtwhYjGOXChYtauFOGiBb+WdkftRlLT4v3fvp8vDfznvi+cOC9c++793u+59577pOZqoZFZE/7ARvrY3WxCc34GNMd7XPsxdmI2NgyXitGLf67mflHlwEiYhmn8HxJ4t3MvNuVQJsCfXEPM7itpxJtCjxERMzjpZr7AY5k5tLYkZn3ImIG3+qhxKicZDPGrDfU+pzB9gYCv9cHe1ISX+EObpX2Lz7ouorxGRZqvmfxnQ67YwKH8GJmTmfmdPlRrMV6NWRm5zUxgWfwd1uHiPgxIrJm9yPi5Uq3Q/U+WMF72K/Yqo1YcxHiHayv+R5k5l/l8zwWVvn+U+yPiMO4ge8z87/OBDJzGcurtK8oom1EeU5sxT7sUihypDOBiNiFF9bqV8PVzPy18n4+Mw9HxNv4otqxSwqO45WeBBYVu6MJjy3wLimY6zl5L7QRiIg4ip1PYY7d2BQRC4pUbiufV/B1KMrp9Lj4RMQiduC6QsqhsAVvKglMNdwHXnuS+t7jBH0LV9qq4dXMvDRg9DCLU01rYKSo74MhIp7D+4pz4VEKMKkoTNsHlv9D/NR0JZvBz5n525AKYE5F5aoCF/DJwNFvU1TJycx8dA5ExA68qqhgQ+Igzo6LWTUFs2XDnwMTmMXJqiMxhSUcGFj+PYqSvK56I4I3sAnnBo5+Dqcz835dgW/w5cDRj3ATu2t+qbhw7BmYwAFcrvvHKVjKzF8Gln9WywmbODZw9JOKvb+13jZS/AdciIipAaP/CBcz81pT4wn8o/8veR+7jteb1PkfQvKE2zVyhuYAAAAASUVORK5CYII="> <b>Open, but not modified</b></a></li>\
+                    </ul>\
+                </div>\
+            <div class="createNewSnippetForm">\
+                    <form action="index.html" method="post">\
+                        <input type="text" placeholder="Snippet Draft Name..">\
+                        <input type="submit" value="Create" disabled>\
+                        <a class="cancel">Cancel</a>\
+                    </form>\
+                </div>\
+            <div class="activePage">\
+                    <a class="saveButton">Save</a>\
+                    <div class="comments">\
+                        <a class="goLeft"></a><!--\
+                     --><div class="area">\
+                            <div class="owl-carousel owl-theme">\
+                            </div>\
+                        </div><!--\
+                     --><a class="goRight"></a>\
+                    </div>\
+                </div>\
+            <div class="pull-right closeActivePage">\
+                <a class="top-buttons minimize"></a>\
+                <a class="top-buttons close"></a>\
+            </div>\
+            <div class="clearfix"></div>\
+        </div>\
+    </div>').appendTo(document.body);
+
+    $('<ul id="snippetor-vertical-menu"></ul>').appendTo(document.body);
+
+    // Close icon
+    var snippetorCloseAction = findById("snipettor-close-action", "click", function(e) {
+      e.stopPropagation();
+      ns.uiApi.closeCurrentSnippet();
+    }); // On click handler
+
+    var saveAction = findById("snippetor-save-action", "click", function(e) {
+      e.stopPropagation();
+      ns.extApi.saveSnippet();
+    });
+
+    var editAction = findById("snippetor-edit-action", "click", function(e) {
+      e.stopPropagation();
+      ns.extApi.saveSnippet();
+    });
+
+    /*
         var snippetTitle = findById("snippetor-input-action-wrapper", "click", function(e) {
-            e.stopPropagation();
+          e.stopPropagation();
         });
 
         var xTitle = findById("snippetor-input-action", "click", function(e) {
-            e.stopPropagation();
+          e.stopPropagation();
         });
 
         var snipettorCreateAction = findById("snippetor-create-action", "click", function(e) {
-            e.stopPropagation();
-            var inTitle = findById("snippetor-input-action");
-            if (inTitle && inTitle.value) {
-                //ns.extApi.saveSnippet();
-                ns.extApi.createSnippet(inTitle.value, function() {
-                    // activate save and hide create
-                    ns.uiApi.toggleSave(true, false);
-                    ns.uiApi.toggleCreate(false);
-                });
-            } else {
-                snipettorCreateAction.style.disabled = true;
-            }
+          e.stopPropagation();
+          var inTitle = findById("snippetor-input-action");
+          if (inTitle && inTitle.value) {
+            //ns.extApi.saveSnippet();
+            ns.extApi.createSnippet(inTitle.value, function() {
+              // activate save and hide create
+              ns.uiApi.toggleSave(true, false);
+              ns.uiApi.toggleCreate(false);
+            });
+          } else {
+            snipettorCreateAction.style.disabled = true;
+          }
         });
-
+    */
+    /*   show/hide vertical menu
         // Show/hide top menu
         var snippetorToggleAction = findById("menu-dddd", "click", function(e) {
-            if (ns.extApi.state == "idle") {
-                ns.uiApi.toggleVMenu();
-            } else {
-                ns.uiApi.toggleVMenu(false);
-                //var rrr = document.getElementById("menu-dddd");
-                snippetorToggleAction.style.height = "49px";
-                if (snippetorToggleAction.style.width == "42px")
-                    snippetorToggleAction.style.width = "100%";
-                else
-                    snippetorToggleAction.style.width = "42px";
-            }
+          if (ns.extApi.state == "idle") {
+            ns.uiApi.toggleVMenu();
+          } else {
+            ns.uiApi.toggleVMenu(false);
+            //var rrr = document.getElementById("menu-dddd");
+            snippetorToggleAction.style.height = "49px";
+            if (snippetorToggleAction.style.width == "42px")
+              snippetorToggleAction.style.width = "100%";
+            else
+              snippetorToggleAction.style.width = "42px";
+          }
         });
+    */
+    // once more
+    setTimeout(function() {
+      subscribeForTheLineDblClick();
 
-        // once more
-        setTimeout(function() {
-          subscribeForTheLineDblClick();
-	    }, 200);
-    }); // document ready
+      $(".snippetor-ui .brand").click(function(e, postProcess) {
+        e.preventDefault();
+        //
+        // If UI has working snippet we do not need to show
+        // drop down menu
+        if (ns.extApi.workingSnippetId >= 0 || ns.uiApi.creating) {
+          if ($(this).hasClass("active-vmenu")) {
+            $(this).removeClass("active-vmenu");
+
+            (ns.uiApi.creating ?
+              $(".snippetor-ui .createNewSnippetForm").hide() :
+              $(".snippetor-ui div.activePage").hide());
+            $(".snippetor-ui .closeActivePage").hide()
+            $(".snippetor-ui div.navigation").width("20px");
+          } else {
+            // add class
+            $(this).addClass("active-vmenu");
+            (ns.uiApi.creating ?
+              $(".snippetor-ui .createNewSnippetForm").fadeIn() :
+              $(".snippetor-ui div.activePage").show());
+            $(".snippetor-ui .closeActivePage").show();
+            $(".snippetor-ui div.navigation").removeAttr("style");
+          }
+        } else {
+          // Drop down menu is required when there is no opened snippet
+          if ($(this).hasClass("active")) {
+            $(this).children(".dropdown-menu").fadeOut(200);
+            $(this).removeClass("active");
+          } else {
+            $(this).children(".dropdown-menu").fadeIn(200);
+            $(this).addClass("active");
+          }
+        }
+
+        if (typeof(postProcess) == "function") {
+          postProcess();
+        }
+      }).mouseleave(function() {
+        $(this).children(".dropdown-menu").fadeOut(100);
+        $(this).removeClass("active");
+      })
+
+
+      $(".snippetor-ui #createNewSnippetButton").click(function(e) {
+        e.preventDefault();
+        // switch into another mode
+        $(".snippetor-ui .brand").trigger("click");
+        ns.uiApi.creating = true;
+
+
+        $(".snippetor-ui .brand .dropdown-menu").fadeOut(100);
+        $(".snippetor-ui .activePage").hide();
+        $(".snippetor-ui .brand").removeClass("active");
+        $(".snippetor-ui .createNewSnippetForm").fadeIn();
+        // show menu again
+        $(".snippetor-ui .brand").trigger("click");
+        $(".snippetor-ui .createNewSnippetForm input[type=text]").focus();
+        return false;
+      })
+      $(".snippetor-ui .createNewSnippetForm .cancel").click(function(e) {
+        e.preventDefault();
+        // hide create form
+        // $(".snippetor-ui .createNewSnippetForm").hide();
+        // trigger top menu hiding
+        $(".snippetor-ui .brand").trigger("click",
+          function() {
+            // trigger no show top menu on brand menu
+            ns.uiApi.creating = false;
+          });
+        return false;
+      });
+      $(".snippetor-ui .createNewSnippetForm input[type=text]").keyup(function() {
+        if ($(this).val() != 0) {
+          $(".snippetor-ui .createNewSnippetForm input[type=submit]").prop("disabled", false);
+        } else {
+          $(".snippetor-ui .createNewSnippetForm input[type=submit]").prop("disabled", true);
+        }
+      })
+      /*
+
+      */
+      //ns.uiApi.carouselReInit();
+
+      $(".snippetor-ui a.minimize").click(function() {
+        $(".snippetor-ui div.activePage").hide();
+        $(".snippetor-ui .closeActivePage").hide();
+        $(".snippetor-ui .createNewSnippetForm").hide();
+        $(".snippetor-ui div.navigation").width("20px");
+        $(".snippetor-ui .brand").removeClass("active-vmenu");
+      });
+
+      // Make init
+      ns.uiApi.init();
+    }, 200);
+
+
+  }); // document ready
 
 })($);

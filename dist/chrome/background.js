@@ -13,9 +13,9 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
             res[0]) // value of `injected` above: don't inject twice
             return;
 
-        var cssFiles = ['jstree.css', 'octotree.css'];
+        var cssFiles = ['jstree.css', 'octotree.css', 'owl.carousel.min.css', 'owl.theme.default.min.css'];
 
-        var jsFiles = ['jquery.js', 'jquery-ui.js', 'SnippetSortable.min.js', 'jstree.js'];
+        var jsFiles = ['jquery.js', 'jquery-ui.js', 'owl.carousel.min.js', 'SnippetSortable.min.js', 'jstree.js'];
 
         cachedTabs[tabId] = true;
 
@@ -222,12 +222,10 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
             workingEnvironment[sender.tab.id] = null;
         },
         subscribeSnippet: function(data) {
-			for (var s in snippetsList)
-			  if (snippetsList[s] && snippetsList[s].uid == data.payload.uid) {
-                workingEnvironment[sender.tab.id] = s;
-                console.log("SSSSSSSSSSSSSSSSSSSSSSUBSCRIBED: " + data.payload.uid);
-                console.dir(snippetsList[s]);
-			  }
+          for (var s in snippetsList)
+			        if (snippetsList[s] && snippetsList[s].uid == data.payload.uid) {
+                  workingEnvironment[sender.tab.id] = s;
+			        }
         },
 
         editCurrentSnippet: function(data) {
@@ -278,22 +276,17 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
             sendRes(true);
         },
         addNewItem: function(payload) {
-            console.log("ADD NEW ITEM: ");
-            console.dir(payload);
             var pos = workingEnvironment[sender.tab.id];
-            console.log("POSITION IS: " + pos);
-            console.dir(payload);
             if (pos != undefined) {
-                console.log("ADD PAYLOAD");
-                snippetsList[pos].items.push(payload);
+                snippetsList[pos].items.splice(payload.index, 0, payload.item);
                 sendRes(true);
 
                 // Send item added event for all tabs
                 this._broadcastTabs(sender.tab.id, "onSnippetItemChange", {
                     action: "add",
-                    item: payload,
+                    item: payload.item,
                     working: pos,
-                    index: snippetsList[pos].items.length - 1
+                    index: payload.index
                 });
                 return true;
             }
