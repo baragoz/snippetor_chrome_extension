@@ -293,27 +293,27 @@
 
     ns.extApi = {
       items: [],
-      workingSnippetId: null,
-      extensionWorkingItemId: null,
+      wsid: null,
+      wiid: null,
       state: "idle",
       //
       // Return the working item
       //
       getWorkingItem: function() {
-        if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
+        if (ns.extApi.wsid == undefined || ns.extApi.wsid == null)
           return null;
 
-        var itemIdx = ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem;
+        var itemIdx = ns.extApi.snippetsList[ns.extApi.wsid].workingItem;
         if (itemIdx == null || itemIdx == undefined)
           return null;
-        return ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[itemIdx];
+        return ns.extApi.snippetsList[ns.extApi.wsid].items[itemIdx];
       },
       saveNewItemAtCurrentPosition: function(item) {
-        var itemIdx = ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem;
+        var itemIdx = ns.extApi.snippetsList[ns.extApi.wsid].workingItem;
 
         this.addNewItem(itemIdx, item, function(response) {
           // add to the end of the existing list
-          ns.uiApi.onAddItem(ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[itemIdx], itemIdx);
+          ns.uiApi.onAddItem(ns.extApi.snippetsList[ns.extApi.wsid].items[itemIdx], itemIdx);
         });
       },
       updateCommentForCurrentSnippetItem: function(comment) {
@@ -322,12 +322,12 @@
           console.log("Error: there is no snippet item which we can change comment for.");
           return;
         }
-        this.updateItemComment(ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem, comment);
+        this.updateItemComment(ns.extApi.snippetsList[ns.extApi.wsid].workingItem, comment);
       },
       //
       //
       isWorkingSnippet: function(payload) {
-        return (payload.working == this.workingSnippetId);
+        return (payload.working == this.wsid);
       },
       onSaveSnippet: function(id) {
         // Remove snippet from the menu list, because it is not draft anymore
@@ -342,7 +342,7 @@
           }
         }, function(response) {
           // get an id of the working snippet
-          ns.extApi.workingSnippetId = response.working;
+          ns.extApi.wsid = response.working;
           console.log("Snippet created");
           if (callback)
             callback(response);
@@ -353,11 +353,11 @@
           type: "openSnippet",
           payload: idx
         }, function(response) {});
-        ns.extApi.workingSnippetId = idx;
+        ns.extApi.wsid = idx;
       },
       openSnippetItem: function(id, callback) {
         ns.uiApi.showInitialBubbleRequestDone = false;
-        ns.extApi.snippetsList[ns.extApi.workingSnippetId].workingItem = id;
+        ns.extApi.snippetsList[ns.extApi.wsid].workingItem = id;
 
         chrome.runtime.sendMessage({
           type: "openItem",
@@ -386,7 +386,7 @@
             index: idx
           }
         }, function(response) {
-          ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(idx, 0, item);
+          ns.extApi.snippetsList[ns.extApi.wsid].items.splice(idx, 0, item);
           if (callback)
             callback(response);
         });
@@ -403,7 +403,7 @@
         }, function(response) {
           console.log("snippet has been updated");
         });
-        this.snippetsList[this.workingSnippetId].items[idx].comment = comment;
+        this.snippetsList[this.wsid].items[idx].comment = comment;
         this.items[idx].comment = comment;
       },
       moveIndex: function(payload) {
@@ -414,19 +414,19 @@
           console.log("snippet has been updated");
         });
         // change the position of old item and new item
-        var item = ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(payload.oldIndex, 1);
-        ns.extApi.snippetsList[ns.extApi.workingSnippetId].items.splice(payload.newIndex, 0, item);
+        var item = ns.extApi.snippetsList[ns.extApi.wsid].items.splice(payload.oldIndex, 1);
+        ns.extApi.snippetsList[ns.extApi.wsid].items.splice(payload.newIndex, 0, item);
       },
       closeCurrentSnippet: function() {
         chrome.runtime.sendMessage({
           type: "closeCurrentSnippet",
-          payload: ns.extApi.workingSnippetId
+          payload: ns.extApi.wsid
         }, function(response) {
           console.log("snippet has been unsubscribed");
         });
         // reset state to the IDLE
-        ns.extApi.workingSnippetId = null;
-        ns.extApi.extensionWorkingItemId = undefined;
+        ns.extApi.wsid = null;
+        ns.extApi.wiid = undefined;
         ns.extApi.state = "idle";
       },
       // track if extension initialized
@@ -439,8 +439,8 @@
         }, function(response) {
           console.dir(response);
           ns.extApi.isIniitalized = true;
-          ns.extApi.workingSnippetId = response.working;
-          ns.extApi.extensionWorkingItemId = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem : null;
+          ns.extApi.wsid = response.working;
+          ns.extApi.wiid = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem : null;
           ns.extApi.snippetsList = response.snippets;
           if (callback)
             callback(response);
@@ -451,20 +451,20 @@
       onAddItem: function(payload) {
         ns.extApi.snippetsList[payload.working].items.splice(payload.index, 0, payload.item);
         // update snippet item UI if it was current item
-        if (payload.working == ns.extApi.workingSnippetId) {
+        if (payload.working == ns.extApi.wsid) {
           // add to the end of the existing list
           ns.uiApi.onAddItem(ns.extApi.snippetsList[payload.working].items[payload.index], payload.index);
         }
       },
       onRemoveItem: function(payload) {
         var removed = ns.extApi.snippetsList[payload.working].items.splice(payload.payload.index, 1);
-        if (payload.working == ns.extApi.workingSnippetId) {
+        if (payload.working == ns.extApi.wsid) {
           ns.uiApi.onRemoveItem(removed);
         }
       },
       onUpdateItem: function(payload) {
         ns.extApi.snippetsList[payload.working].items[payload.payload.index] = payload.item;
-        if (payload.working == ns.extApi.workingSnippetId) {
+        if (payload.working == ns.extApi.wsid) {
           ns.uiApi.onUpdateItem(payload.item, payload.payload.index);
         }
       },
@@ -475,7 +475,7 @@
         ns.extApi.snippetsList[payload.working].items.splice(payload.payload.newIndex, 0, item);
 
         // update snippet item UI if it was current item
-        if (payload.working == ns.extApi.workingSnippetId) {
+        if (payload.working == ns.extApi.wsid) {
           // swap status if it is the same items
           ns.uiApi.onMoveItem(payload.payload.oldIndex, payload.payload.newIndex);
         }
@@ -509,7 +509,8 @@
         this.removeBubble();
         // Create a new bubble element and configure it
         // TBD: use nano for a template handling
-        this.bubbleElement = payload.isNewItem ?
+        var isSimple = payload.isNewItem && !payload.isModified;
+        this.bubbleElement = isSimple ?
                              this._getNewBubbleTemplate(payload) :
                              this._getBubbleTemplate(payload);
 
@@ -520,8 +521,8 @@
         $("#snipettor-bubble-dialog-new").css(styleData);
 
         // Sync -up component and model with an old jQuery style
-        payload.isNewItem ? this._configureNewBubbleBehavior(callbacks) :
-                            this._configureBubbleBehavior(callbacks);
+        isSimple ? this._configureNewBubbleBehavior(callbacks) :
+                   this._configureBubbleBehavior(callbacks);
       },
       _getBubbleTemplate: function(payload) {
         return $('<div id="snipettor-bubble-dialog-new" class="bubble-comment active" style="display: block;">\
@@ -557,7 +558,6 @@
         //
         this.bubbleElement.find(".bubble-close").click(function(e) {
           e.preventDefault();
-          that.workingBubble.remove();
           // Notify that bubble was closed
           if (callbacks.onBubbleClose)
             callbacks.onBubbleClose();
@@ -782,27 +782,25 @@
           isPrevVisisble: function() {
             // Not saved item should not have next and prev navigation
             // if it is the last item, then do not show prev
-            return isSavedItem && (ns.extApi.extensionWorkingItemId > 0);
+            return isSavedItem && (ns.extApi.wiid > 0);
           },
           isNextVisible: function() {
-            var len = ns.extApi.snippetsList[ns.extApi.extensionWorkingItemId].items.length;
+            var len = ns.extApi.snippetsList[ns.extApi.wsid].items.length;
             // Not saved item should not have next and prev navigation
             // do not show next item if there is no more items to show
-            return isSavedItem && (ns.extApi.extensionWorkingItemId < len - 1);
+            return isSavedItem && (ns.extApi.wiid < len - 1);
           },
           onPrevClick: function() {
-            if (ns.extApi.extensionWorkingItemId > 0) {
-              ns.extApi.extensionWorkingItemId--;
-              ns.extApi.openSnippetItem(ns.extApi.extensionWorkingItemId);
+            if (ns.extApi.wiid > 0) {
+              ns.extApi.openSnippetItem(ns.extApi.wiid - 1);
             } else {
               // we should never get into this else
             }
           },
           onNextClick: function() {
-            var len = ns.extApi.snippetsList[ns.extApi.extensionWorkingItemId].items.length;
-            if (ns.extApi.extensionWorkingItemId < len - 1) {
-              ns.extApi.extensionWorkingItemId++
-                ns.extApi.openSnippetItem(ns.extApi.extensionWorkingItemId);
+            var len = ns.extApi.snippetsList[ns.extApi.wsid].items.length;
+            if (ns.extApi.wiid < len - 1) {
+                ns.extApi.openSnippetItem(ns.extApi.wiid + 1);
             } else {
               // somthing goes wrong, but we hanle it anyway
             }
@@ -875,7 +873,7 @@
       // Update comment via bubble UI element
       updateItemComment: function(idx, comment) {
         // Do nothing if snippet was not named
-        if (ns.extApi.workingSnippetId == undefined || ns.extApi.workingSnippetId == null)
+        if (ns.extApi.wsid == undefined || ns.extApi.wsid == null)
           return;
         ns.extApi.updateItemComment(idx, comment);
       },
@@ -959,10 +957,10 @@
       },
       init: function() {
         ns.extApi.init(function() {
-          if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
+          if (ns.extApi.wsid != null && ns.extApi.wsid != undefined) {
             ns.uiApi.refreshItemsUiList();
             // Force change
-            var isMod = ns.extApi.snippetsList[ns.extApi.workingSnippetId].isModified;
+            var isMod = ns.extApi.snippetsList[ns.extApi.wsid].isModified;
             console.log("IS MODIFIED ? " + isMod);
             ns.uiApi.toggleSave(isMod, !isMod);
             ns.uiApi.toggleCreate(false);
@@ -977,7 +975,7 @@
           // and horizontal otherwise.
           // So we need to minimize menu on start in case which described above
           //
-          if (ns.extApi.workingSnippetId == null && ns.extApi.workingSnippetId == undefined) {
+          if (ns.extApi.wsid == null && ns.extApi.wsid == undefined) {
             if (!isSnippetor) {
               //snippetorToggleAction.style.width = "42px";
               //snippetorToggleAction.style.height = "49px";
@@ -1037,9 +1035,9 @@
           return;
         var snippetsList = findById("menu-snippets-list");
         //snippetsList.innerHTML = '';
-        if (ns.extApi.workingSnippetId != null && ns.extApi.workingSnippetId != undefined) {
+        if (ns.extApi.wsid != null && ns.extApi.wsid != undefined) {
           // update according to the modified state
-          var isMod = ns.extApi.snippetsList[ns.extApi.workingSnippetId].isModified;
+          var isMod = ns.extApi.snippetsList[ns.extApi.wsid].isModified;
           // clean current carousel and refresh it
           $('.snippetor-ui .owl-carousel')
           .owlCarousel('destroy')
@@ -1048,10 +1046,10 @@
           .removeClass("owl-drag");
 
           // Add all snippet items
-          for (var x in ns.extApi.snippetsList[ns.extApi.workingSnippetId].items) {
+          for (var x in ns.extApi.snippetsList[ns.extApi.wsid].items) {
             console.log("POST INIT: []" + x);
-            var tmp = ns.extApi.snippetsList[ns.extApi.workingSnippetId].items[x];
-            var isActive = x == ns.extApi.extensionWorkingItemId;
+            var tmp = ns.extApi.snippetsList[ns.extApi.wsid].items[x];
+            var isActive = x == ns.extApi.wiid;
             ns.uiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false, isActive);
           }
           // reinit carousel on load complete
@@ -1168,7 +1166,7 @@
       onEditStateSnippet: function(payload) {
         ns.extApi.snippetsList[payload.working].isModified = payload.isModified;
 
-        if (payload.working == ns.extApi.workingSnippetId) {
+        if (payload.working == ns.extApi.wsid) {
           var isMod = payload.isModified ? true : false;
           ns.uiApi.toggleSave(isMod, !isMod);
           //this.changeEditMode(payload.isModified);
@@ -1177,7 +1175,7 @@
       onOpenSnippet: function(payload) {
         // refresh the list of snippets in the menu
         // TODO: split draft snippets and opened snippets
-        if (payload.working != ns.extApi.workingSnippetId) {
+        if (payload.working != ns.extApi.wsid) {
           ns.extApi.snippetsList[payload.working] = payload.snippet;
           // refresh vertical menu items
           this.refreshVertMenu();
@@ -1310,7 +1308,7 @@
         //
         // If UI has working snippet we do not need to show
         // drop down menu
-        if (ns.extApi.workingSnippetId >= 0 || ns.uiApi.creating) {
+        if (ns.extApi.wsid >= 0 || ns.uiApi.creating) {
           if ($(this).hasClass("active-vmenu")) {
             $(this).removeClass("active-vmenu");
 
