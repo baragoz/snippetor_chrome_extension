@@ -173,9 +173,7 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
         // Get initial items for a current tab
         //
         initialItems: function(payload) {
-            console.log("GET INITIAL ITEMS: " + sender.tab.id);
             // has opened snippet
-            console.dir(workingEnvironment);
             var pos = workingEnvironment[sender.tab.id];
             if (pos != undefined && pos >= 0) {
                 return sendRes({

@@ -85,7 +85,6 @@
         }, function(response) {
           console.log("snippet has been unsubscribed. TODO: send a feedback message");
         });
-
       } else if (payload.action == "edit-current-snippet") {
         chrome.runtime.sendMessage({
           type: "editCurrentSnippet",
@@ -324,6 +323,28 @@
         }
         this.updateItemComment(ns.extApi.snippetsList[ns.extApi.wsid].workingItem, comment);
       },
+      unsubscribeSnippet: function() {
+        chrome.runtime.sendMessage({
+          type: "unsubscribeSnippet",
+          payload: ns.extApi.wsid,
+        }, function(response) {
+          ns.extApi.wsid = null;
+          ns.extApi.wiid = null;
+          console.log("snippet has been unsubscribed. TODO: send a feedback message");
+        });
+
+      },
+      subscribeSnippet: function(idx) {
+        var snp = ns.extApi.snippetsList[idx];
+        if (!snp) return;
+
+        chrome.runtime.sendMessage({
+          type: "subscribeSnippet",
+          payload: snp.uid,
+        }, function(response) {
+          console.log("snippet has been subscribed. TODO: send a feedback message");
+        });
+      },
       //
       //
       isWorkingSnippet: function(payload) {
@@ -374,6 +395,17 @@
           type: "saveSnippet"
         }, function(response) {
           console.log("Snippet saved probably");
+          if (callback)
+            callback(response);
+        });
+      },
+      removeItem: function(idx) {
+        chrome.runtime.sendMessage({
+          type: "removeItem",
+          payload: idx
+        }, function(response) {
+          ns.extApi.snippetsList[ns.extApi.wsid].items.splice(idx, 1);
+          ns.uiApi.onRemoveItem(idx);
           if (callback)
             callback(response);
         });
@@ -431,16 +463,17 @@
       },
       // track if extension initialized
       // and provided the list of snippets
-      isIniitalized: false,
+      isInitialized: false,
       init: function(callback) {
         chrome.runtime.sendMessage({
           type: "initialItems",
           payload: {}
         }, function(response) {
           console.dir(response);
-          ns.extApi.isIniitalized = true;
+          ns.extApi.isInitialized = true;
           ns.extApi.wsid = response.working;
-          ns.extApi.wiid = (response.working != undefined && response.working >= 0) ? response.snippets[response.working].workingItem : null;
+          ns.extApi.wiid = (response.working != undefined && response.working != null && response.working >= 0)
+                            ? response.snippets[response.working].workingItem : null;
           ns.extApi.snippetsList = response.snippets;
           if (callback)
             callback(response);
@@ -739,7 +772,7 @@
         // It happens because of multiple call of
         // this method. We have no idea when all code will be on place
         // but want to show bubble ASAP
-        if (this.showInitialBubbleRequestDone || !ns.extApi.isIniitalized)
+        if (this.showInitialBubbleRequestDone || !ns.extApi.isInitialized)
           return;
 
         var item = ns.extApi.getWorkingItem();
@@ -881,7 +914,7 @@
       snippetsList: null,
       // Current index of snippet item
       current_index: 0,
-      carouselReInit: function() {
+      carouselReInit: function(wiid /* working item ID */) {
         var topSlider = $('.snippetor-ui .owl-carousel').owlCarousel({
           loop:false,
           nav: false,
@@ -904,6 +937,9 @@
           },
           dots: false
         });
+
+
+        topSlider.trigger("to.owl.carousel", [wiid, 0]);
 
         $(".snippetor-ui .goLeft").click(function(e) {
           e.preventDefault();
@@ -935,7 +971,7 @@
         $('<div class="item modified ' + (isActive ? 'active' : '') + '">\
               <div class="file">' + payload + '</div><!--\
               --><span>line: <b>' + line + '</b></span>\
-              <a class="remove"></a>\
+              <a class="remove ui-snippet-item-remove"></a>\
               </div>').appendTo("div.owl-carousel");
 
         //
@@ -953,7 +989,6 @@
                     } // check if exists
           */
 
-        console.log("Show new item: " + url);
       },
       init: function() {
         ns.extApi.init(function() {
@@ -963,24 +998,10 @@
             var isMod = ns.extApi.snippetsList[ns.extApi.wsid].isModified;
             console.log("IS MODIFIED ? " + isMod);
             ns.uiApi.toggleSave(isMod, !isMod);
-            ns.uiApi.toggleCreate(false);
           } else {
             ns.uiApi.toggleSave(false, false);
-            ns.uiApi.toggleCreate(false);
           }
-
-          ns.uiApi.toggleVMenu(false);
-          //
-          // Work-around for a S-menu toggle: we need to toggle vertical when user do nothing with snippet
-          // and horizontal otherwise.
-          // So we need to minimize menu on start in case which described above
-          //
-          if (ns.extApi.wsid == null && ns.extApi.wsid == undefined) {
-            if (!isSnippetor) {
-              //snippetorToggleAction.style.width = "42px";
-              //snippetorToggleAction.style.height = "49px";
-            }
-          }
+          // Update the list of snippets
           ns.uiApi.refreshVertMenu();
         });
       },
@@ -999,7 +1020,28 @@
       refreshVertMenu: function() {
         if (isSnippetor)
           return;
-        var vertMenu = findById("snippetor-vertical-menu");
+        for (var x in ns.extApi.snippetsList) {
+          var snip = ns.extApi.snippetsList[x];
+          var sname = snip.title;
+          if (sname.length > 33) {
+            sname = sname.substr(0, 30) + "...";
+          }
+
+          $('.ui-listofsnippets').append(
+            '<li class="ui-snippet-list"><a>[ ] <b style="overflow:hidden;">'+sname+'</b></a></li>');
+        }
+
+        var snippets = $('.ui-snippet-list');
+        snippets.click(function(e) {
+          e.stopPropagation();
+          e.preventDefault();
+          var idx = snippets.index($(this));
+          ns.extApi.openSnippet(idx);
+        });
+
+
+
+        var vertMenu= findById("snippetor-vertical-menu");
         if (vertMenu) {
           // Empty previous value
           //vertMenu.innerHTML = '<li><a id="snipettor-create-item">Create</a></li>';
@@ -1047,13 +1089,12 @@
 
           // Add all snippet items
           for (var x in ns.extApi.snippetsList[ns.extApi.wsid].items) {
-            console.log("POST INIT: []" + x);
             var tmp = ns.extApi.snippetsList[ns.extApi.wsid].items[x];
             var isActive = x == ns.extApi.wiid;
             ns.uiApi.showNewItem(tmp.url, tmp.line, tmp.data, true, false, isActive);
           }
           // reinit carousel on load complete
-          this.carouselReInit();
+          this.carouselReInit(ns.extApi.wiid);
 
           var navigation = $(".owl-item");
           // replace on map function
@@ -1066,6 +1107,16 @@
               };
             })(v));
           }
+
+          var rems2 = $(".ui-snippet-item-remove");
+          rems2.click(
+              function(e) {
+                 e.preventDefault();
+                 e.stopPropagation();
+                 var element = $(this).parent().parent();
+                 var pos = element.parent().find(".owl-item").index(element);
+                 ns.extApi.removeItem(pos);
+              });
         }
       },
       openSnippet: function(idx) {
@@ -1206,13 +1257,10 @@
             <div class="brand">\
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAANjSURBVHic7Zo/TBRBGMUfd+ZCTpHDgiCHFRUmJlZUGAs1JtJIQkF1HSWNdMaCisqEigorKjo7sZBKEggV0UL+FMQYGhMtjIbkYnwWe0fWudm9vZ359pvEe8kWu9l9b97v7jZ7MztAEv+zStoD0FYfgPYAtNUHoD0AbfUBaA9AWyECaAD4BuA9gBcAhiTDBgJ8EPoA4E5s/xWARamw0L4Bt/BveQD4IRkYGoAnlmNvJANDB/AT0b1ATCEBqAB4YBx7B6ApGeoDQA3APICqo899AFeNY0lf/2ors+aYCZB02cZIfmKkfZLDDl5r7FTdct5wK4ut7DGXDr7Kt7VPspLT79jwOrScU4mVb8sJQt7yN0ke0a6ZHH6TFp9Vy3kzCZlHrTEVAiCt/FuS5RyeSxYvG8hyK8MbBN/lB3OUB8ltw+s7k0EO+oQQQvkqyQvDb6vLNd4g9FLevEn5KA+SsxbPRobr0iAcZ4WQZYDjguVBct3w/ENyNOO13SCMuwKQLg+SZ4bvQY/XO0HoVv5EuPyUxXslh08ahJM0CJrlQXLZ4j+d0ysXBJtRvaDyILlj+H8lWXLw6wah49Fas/wQyaaRsenBtycIZvnTgsqD5JwlZ8GTdxqE0zgErfIguWHk/CY54tE/EwSQnFAoD5LnRtauQEY3CBMguadQ/q4l77lQVhqEPa0pscInPxNFnZ/ArpFzrvDpX/4EwGJvgiOMbnhxbSiUv7wJFg1hweI/p1HeBNCGIP0gtGn4Nhk9FBVRPvVBqAgIJUaPu3HtaJVPAgDK/RmatvgtF1Q+858hSQgrFq8prfLdALQh+JwQOTA8zoTLO02I+IYwymi6K651zfJZAYB+JkUblmtnBct7mxSNQ3CZFt8yrrlgNCXuu7zItLgrhDKjxY64trXL5wGQBYJtRce2preUI1t9aSwLBNua3qrlvMkcuUEsjra3XpbHD43zjnNmBrM8boOQ9IJEnZ1ac8gM5gWJ9lYjOc/kO/qiBcAjx8xqK7PmOv4iXpR8DeBpbP8XgBsQfvkpq6SnxCoAHhrHdhBIeUAewD0A14xjOnN/CZIGEM7kZ4KkAVw39j8C+CKc2ZOuCPs/A/AZwGMAtwG8FM7rWSG+Ll+oQnpXWEV9ANoD0FYfgPYAtNUHoD0Abf0FwgHK57mLy2kAAAAASUVORK5CYII=">\
                     <span>Snippetor</span>\
-                    <ul class="dropdown-menu">\
+                    <ul class="dropdown-menu ui-listofsnippets">\
                         <li><a id="createNewSnippetButton"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAGKSURBVFiF7Ze7SgNREIa/31tpNE8gYpNCUbC0CNiopaSxsjAGfItY+gQ29jY+goVYaWMhSpr0NkkkaiPGjIUHicteszmYwh+GhT2zM98Mc85yMDMGDagBbcBy2AtQCcYOM7mkP5LUAe6BK4bTArAP9IA9M7uI9Q7pgAH1NPRhBpRdjCfgI6kTE0NWmUaHwA1wLqkS5eQT4A3YToLwAfDunmvAOnACtCIhPMzAJPBI+O54DfpPjbp8M/uUtAysAjMDS1XgIOg/cgAH0QfuBt9J2grz9TmEqZTYAUlF4AwoZozdAapm1olzGv8OuAp2fQGMfwcAJJWAQsbYXTNr5AaQtMT33zHrlu1JKplZMxeAmTUlbQDzGQGek5KnAnAQtxmTp9b4D6GkAnDKcAfRkZl1cwEA08Ccsyzqu29jlWYIW8BOxuSpNf4zACBpEZiNWH4ws543AHcQNWJ868CxNwB3EG0SvQsuh02eCsBBXOdJEqc/H8J/AB+X0yiVgRUz+z3Mnq7nYdYGasF8X7nuZR2F1xitAAAAAElFTkSuQmCC"> <b>Create New Snippet</b></a></li>\
                         <li><a><img src="data:image/png;base64,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"> <b>Snippetor Website</b></a></li>\
                         <li><hr></li>\
-                        <li><a><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAHfSURBVFiFzdfPi05hFAfwzxkzaSjNKGElykKyoUZWmgVlM2myoBhZzd5G7Oxs7PwF41UWlJpkOzaUkp1YmFJ+FYUyjUEdi/e9um63vMO98/rWWdzz3O75nu9zznmeG5lpkBgaaHQMQ0SMYn0f7y9n5krTJC7jG7IPe4rRzNSUBb5ib2a++BPTiJjHm8ycbVKBxFg/bLEFbzHdlALDq2Ka+T4izqETERvwY5XJvsP9LLVe9BQYz8xP/X4lIi7i8CqDw27cyswLZWffW/CvhmN4Uvat9RxIXdV/4f8YRHWIiLPY03C8ndgeEVewgk5tEUbEJUxhoWECZWzFfipFiHW6vX6o5YKcxGJdDRzFl8x82GL2MINOXQ3MoNNm5N7hN40DlLYAm7CEXS3LfwoP6ubACd1BsdimAroqzxUPZQUWMNty9tt6Ko8XR0JiDDuwXCy0SOA8bteN4tO4m5kf21XfGSX5ywo8x1TL2e/DB4xUFTiIzbi3BtnfzMzvVQVu4FrL2Q/hNSYqfqlblRMtEziCZ1V/sQWvMvPRGsh/veosRvFcdaFJRMRGHNctwt8wpHuxvNMmAZzE48x8Wbd4tUeinx+Tv7XPmKyrjcjMQqKRNlLvYanaegWiaIVBYeCX0p+WyaVtZX4FoAAAAABJRU5ErkJggg=="> <b>Draft Page Title</b></a></li>\
-                        <li><a><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAIvSURBVFiFtddPiE5hFMfxzxmjEJpS0mQhIlGalCizYiHZjGwsjLCxUJSSpYWFhaWNHZmS8mcWrJTNMElpFsqCEBZkoeRP/o2OxTuj23Xft/dt7v3V6d7nPE/3fJ/znNs9V2YqG64ha7ZrVbH6FRQRO3ETi3ASl9Sjw9haNfEPICIeYC3e4SW+Z+anOqJHxPd2c32F+5Vaqf+Fb3UE7kb9pfH7qkURcRZbSu7E6cx8MmeAiFheAVPUOJ5WALyYS3Doj4gLOIKF7RZl5hSm5hqsSn04ivV420SAbgDm40unRRExHhHZo413A9Dp3Ivar8MRtVH51VsTESO4k5nTPQFk5k/87BGgrOU4ix043hNARKzD6h4DvsrM54XxQ1zGueKibo/gBLb3CDCJYxX+6BkgM6seVIs6AeyPiKGa4mzAIJZgZURc1KqpS+0AZr8Rr2sCKD7n/sx1Ba5WAczDMPZm5qOaAP5TROzC7r6KuQ342mTwGY1irCoDfRhrMnJELMYINlZlIJsGwD48zsw3ZYBVmMjM1w0DHFTYZGJAq1I/4nBV81iXaXVeX7E0M5UzsAA3Gt79AdzOzM/4D+BWZnb8NNegUVyZHcwChFYr3nT1b8Yy3C0DDGMa95oE0Cq+q5n5p+hMXMf5houvHx8wVPJL/MCmhgH24EnZP3sEz+ba33ehUW1qLHGq4d0v1Xr3B6t+Tn9jIiIGGtz9IUxm5ruqyTNaHWzdv+NFe49tVdn5C2NDJizw8/hiAAAAAElFTkSuQmCC">\ <b>Modified page</b></a></li>\
-                        <li><a><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAKISURBVFiFtddPiFdVFAfwzxl/hUoOMwQiYqDgohJChCgIRFz0BynaDG2cKYjQlbQQbSetWk7QZnaBgmCtwhYjGOXChYtauFOGiBb+WdkftRlLT4v3fvp8vDfznvi+cOC9c++793u+59577pOZqoZFZE/7ARvrY3WxCc34GNMd7XPsxdmI2NgyXitGLf67mflHlwEiYhmn8HxJ4t3MvNuVQJsCfXEPM7itpxJtCjxERMzjpZr7AY5k5tLYkZn3ImIG3+qhxKicZDPGrDfU+pzB9gYCv9cHe1ISX+EObpX2Lz7ouorxGRZqvmfxnQ67YwKH8GJmTmfmdPlRrMV6NWRm5zUxgWfwd1uHiPgxIrJm9yPi5Uq3Q/U+WMF72K/Yqo1YcxHiHayv+R5k5l/l8zwWVvn+U+yPiMO4ge8z87/OBDJzGcurtK8oom1EeU5sxT7sUihypDOBiNiFF9bqV8PVzPy18n4+Mw9HxNv4otqxSwqO45WeBBYVu6MJjy3wLimY6zl5L7QRiIg4ip1PYY7d2BQRC4pUbiufV/B1KMrp9Lj4RMQiduC6QsqhsAVvKglMNdwHXnuS+t7jBH0LV9qq4dXMvDRg9DCLU01rYKSo74MhIp7D+4pz4VEKMKkoTNsHlv9D/NR0JZvBz5n525AKYE5F5aoCF/DJwNFvU1TJycx8dA5ExA68qqhgQ+Igzo6LWTUFs2XDnwMTmMXJqiMxhSUcGFj+PYqSvK56I4I3sAnnBo5+Dqcz835dgW/w5cDRj3ATu2t+qbhw7BmYwAFcrvvHKVjKzF8Gln9WywmbODZw9JOKvb+13jZS/AdciIipAaP/CBcz81pT4wn8o/8veR+7jteb1PkfQvKE2zVyhuYAAAAASUVORK5CYII="> <b>Open, but not modified</b></a></li>\
                     </ul>\
                 </div>\
             <div class="createNewSnippetForm">\
@@ -1308,7 +1356,7 @@
         //
         // If UI has working snippet we do not need to show
         // drop down menu
-        if (ns.extApi.wsid >= 0 || ns.uiApi.creating) {
+        if ((ns.extApi.wsid != null && ns.extApi.wsid >= 0) || ns.uiApi.creating) {
           if ($(this).hasClass("active-vmenu")) {
             $(this).removeClass("active-vmenu");
 
@@ -1362,6 +1410,7 @@
         $(".snippetor-ui .createNewSnippetForm input[type=text]").focus();
         return false;
       })
+
       $(".snippetor-ui .createNewSnippetForm .cancel").click(function(e) {
         e.preventDefault();
         // hide create form
@@ -1374,6 +1423,7 @@
           });
         return false;
       });
+
       $(".snippetor-ui .createNewSnippetForm input[type=text]").keyup(function() {
         if ($(this).val() != 0) {
           $(".snippetor-ui .createNewSnippetForm input[type=submit]").prop("disabled", false);
@@ -1381,10 +1431,6 @@
           $(".snippetor-ui .createNewSnippetForm input[type=submit]").prop("disabled", true);
         }
       })
-      /*
-
-      */
-      //ns.uiApi.carouselReInit();
 
       $(".snippetor-ui a.minimize").click(function() {
         $(".snippetor-ui div.activePage").hide();
@@ -1392,6 +1438,16 @@
         $(".snippetor-ui .createNewSnippetForm").hide();
         $(".snippetor-ui div.navigation").width("20px");
         $(".snippetor-ui .brand").removeClass("active-vmenu");
+      });
+
+      $(".snippetor-ui a.close").click(function() {
+        $(".snippetor-ui div.activePage").hide();
+        $(".snippetor-ui .closeActivePage").hide();
+        $(".snippetor-ui .createNewSnippetForm").hide();
+        $(".snippetor-ui div.navigation").width("20px");
+        $(".snippetor-ui .brand").removeClass("active-vmenu");
+
+        ns.extApi.unsubscribeSnippet();
       });
 
       // Make init
