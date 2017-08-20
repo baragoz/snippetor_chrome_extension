@@ -849,8 +849,8 @@
       //
       showBubble: function(evt, url, line) {
         // Do nothing if snippet was not named
-        this.currentItem = ns.extApi.getWorkingItem();
-        if (!this.currentItem)
+        //this.currentItem = ns.extApi.getWorkingItem();
+        if (ns.extApi.wsid == undefined || ns.extApi.wsid == null)
           return;
 
         this.currentItem = {
