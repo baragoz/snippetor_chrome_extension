@@ -1448,6 +1448,8 @@
         $(".snippetor-ui .brand").removeClass("active-vmenu");
 
         ns.extApi.unsubscribeSnippet();
+        // hide current bubble ui on snippet close
+        ns.uiBubbleApi.removeBubble();
       });
 
       // Make init
