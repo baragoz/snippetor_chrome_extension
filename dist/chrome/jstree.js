@@ -374,7 +374,9 @@
           type: "openSnippet",
           payload: idx
         }, function(response) {});
+        // resetup snippet configuration
         ns.extApi.wsid = idx;
+        ns.extApi.wiid = ns.extApi.snippetsList[ns.extApi.wsid].workingItem;
       },
       openSnippetItem: function(id, callback) {
         ns.uiApi.showInitialBubbleRequestDone = false;
@@ -1037,6 +1039,14 @@
           e.preventDefault();
           var idx = snippets.index($(this));
           ns.extApi.openSnippet(idx);
+          // update ui menu
+          ns.uiApi.refreshItemsUiList();
+          // vertical menu disable
+          $(".snippetor-ui .brand").removeClass("active-vmenu");
+          $(".snippetor-ui .dropdown-menu").fadeOut(100);
+          setTimeout(function() {
+            $(".snippetor-ui .brand").trigger("click");
+          }, 100);
         });
 
 
