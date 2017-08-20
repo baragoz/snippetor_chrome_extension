@@ -1398,7 +1398,7 @@ color: white;
 .snippetor-ui .createNewSnippetForm form input[type=text]:-moz-placeholder {
     color: rgba(255,255,255,0.5);
 }
-.snippetor-ui .createNewSnippetForm form input[type=submit] {
+.snippetor-ui .createNewSnippetForm form input[type=button] {
     background: #39A9DB;
     height: 32px;
     width: auto;
@@ -1413,14 +1413,14 @@ color: white;
     border: none;
     cursor: pointer;
 }
-.snippetor-ui .createNewSnippetForm form input[type=submit]:disabled,
-.snippetor-ui .createNewSnippetForm form input[type=submit]:disabled:hover,
-.snippetor-ui .createNewSnippetForm form input[type=submit]:disabled:focus {
+.snippetor-ui .createNewSnippetForm form input[type=button]:disabled,
+.snippetor-ui .createNewSnippetForm form input[type=button]:disabled:hover,
+.snippetor-ui .createNewSnippetForm form input[type=button]:disabled:focus {
     background: #999;
     cursor: default;
 }
-.snippetor-ui .createNewSnippetForm form input[type=submit]:hover,
-.snippetor-ui .createNewSnippetForm form input[type=submit]:focus {
+.snippetor-ui .createNewSnippetForm form input[type=button]:hover,
+.snippetor-ui .createNewSnippetForm form input[type=button]:focus {
     background: #40BCD8;
     outline: none;
 }
