@@ -308,10 +308,11 @@
         return ns.extApi.snippetsList[ns.extApi.wsid].items[itemIdx];
       },
       saveNewItemAtCurrentPosition: function(item) {
-        var itemIdx = ns.extApi.snippetsList[ns.extApi.wsid].workingItem;
+        var itemIdx = ns.extApi.wiid;
         itemIdx = itemIdx == null  || itemIdx == undefined ? 0 : itemIdx + 1;
         this.addNewItem(itemIdx, item, function(response) {
           // add to the end of the existing list
+          ns.extApi.wiid = itemIdx;
           ns.uiApi.onAddItem(ns.extApi.snippetsList[ns.extApi.wsid].items[itemIdx], itemIdx);
         });
       },
@@ -383,6 +384,7 @@
       openSnippetItem: function(id, callback) {
         ns.uiApi.showInitialBubbleRequestDone = false;
         ns.extApi.snippetsList[ns.extApi.wsid].workingItem = id;
+        ns.extApi.wiid = id;
 
         chrome.runtime.sendMessage({
           type: "openItem",

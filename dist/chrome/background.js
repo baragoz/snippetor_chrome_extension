@@ -13,7 +13,7 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
             res[0]) // value of `injected` above: don't inject twice
             return;
 
-        var cssFiles = ['jstree.css', 'octotree.css', 'owl.carousel.min.css', 'owl.theme.default.min.css'];
+        var cssFiles = ['jstree.css', 'owl.carousel.min.css', 'owl.theme.default.min.css'];
 
         var jsFiles = ['jquery.js', 'jquery-ui.js', 'owl.carousel.min.js', 'SnippetSortable.min.js', 'jstree.js'];
 
