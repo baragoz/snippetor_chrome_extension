@@ -37,6 +37,7 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 });
 
 var workingEnvironment = [];
+var tabsUiStates = [];
 var snippetsList = [];
 
 chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
@@ -92,6 +93,7 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
             snippetsList[workingEnvironment[sender.tab.id]] = null;
             // sender tab is moving to the search or open state on snippet and snippet draft save
             workingEnvironment[sender.tab.id] = null;
+            tabsUiStates[sender.tab.id] = {collapsed: true};
             return true;
         },
         onRemoveSnippetDraft: function(payload) {
@@ -132,6 +134,8 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
                     active: true
                 }, function(tab) {
                     workingEnvironment[tab.id] = pos;
+                    // just opened snippet in a new tab
+                    tabsUiStates[tab.id] = {collapsed: false};
                 });
                 // prevent re-open notification
                 if (payload2.index == undefined)
@@ -163,6 +167,8 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
                 }, function(tab) {
                     // Assign opened tab as snippet handler
                     workingEnvironment[tab.id] = pos;
+                    // useless assignment but ...
+                    tabsUiStates[tab.id] = {collapsed: false};
                 });
                 sendRes({
                     status: "saving"
@@ -175,10 +181,12 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
         initialItems: function(payload) {
             // has opened snippet
             var pos = workingEnvironment[sender.tab.id];
+            var state = tabsUiStates[sender.tab.id];
             if (pos != undefined && pos >= 0) {
                 return sendRes({
                     working: pos,
-                    snippets: snippetsList
+                    snippets: snippetsList,
+                    state: state
                 });
             }
             console.log("GET INITIAL ITEMS EMPTY");
@@ -189,11 +197,13 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
         openSnippet: function(index) {
             // TODO: think about synchronization of this list
             workingEnvironment[sender.tab.id] = index;
+            tabsUiStates[sender.tab.id] = {collapsed : false};
         },
         createSnippet: function(payload) {
             console.log("CREATE SNIPPET !Q!!!! " + snippetsList.length);
             // init snippet by id
             workingEnvironment[sender.tab.id] = snippetsList.length;
+            tabsUiStates[sender.tab.id] = {collapsed: false};
             snippetsList.push({
                 title: payload.title,
                 isModified: payload.isModified,
@@ -210,11 +220,18 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
                 working: snippetsList.length - 1
             });
         },
+        updateSnippetState: function(state) {
+          if (state && state.collapsed != undefined ) {
+            tabsUiStates[sender.tab.id] = {collapsed: state.collapsed};
+          }
+        },
         updateSnippet: function(payload) {
+
 
         },
         closeCurrentSnippet: function(data) {
             workingEnvironment[sender.tab.id] = null;
+            tabsUiStates[sender.tab.id] = {collapsed: true};
         },
         unsubscribeSnippet: function(data) {
             workingEnvironment[sender.tab.id] = null;
@@ -223,6 +240,8 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
           for (var s in snippetsList)
 			        if (snippetsList[s] && snippetsList[s].uid == data.payload.uid) {
                   workingEnvironment[sender.tab.id] = s;
+                  // suppose that we can subscribe for snippet when UI is visible
+                  tabsUiStates[sender.tab.id] = {collapsed: false};
 			        }
         },
 

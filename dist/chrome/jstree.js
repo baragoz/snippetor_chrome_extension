@@ -309,7 +309,7 @@
       },
       saveNewItemAtCurrentPosition: function(item) {
         var itemIdx = ns.extApi.snippetsList[ns.extApi.wsid].workingItem;
-
+        itemIdx = itemIdx == null  || itemIdx == undefined ? 0 : itemIdx + 1;
         this.addNewItem(itemIdx, item, function(response) {
           // add to the end of the existing list
           ns.uiApi.onAddItem(ns.extApi.snippetsList[ns.extApi.wsid].items[itemIdx], itemIdx);
@@ -453,6 +453,14 @@
         var item = ns.extApi.snippetsList[ns.extApi.wsid].items.splice(payload.oldIndex, 1);
         ns.extApi.snippetsList[ns.extApi.wsid].items.splice(payload.newIndex, 0, item);
       },
+      updateSnippetState: function(state) {
+        chrome.runtime.sendMessage({
+          type: "updateSnippetState",
+          payload: state
+        }, function(response) {
+          console.log("snippet state changed");
+        });
+      },
       closeCurrentSnippet: function() {
         chrome.runtime.sendMessage({
           type: "closeCurrentSnippet",
@@ -479,6 +487,12 @@
           ns.extApi.wiid = (response.working != undefined && response.working != null && response.working >= 0)
                             ? response.snippets[response.working].workingItem : null;
           ns.extApi.snippetsList = response.snippets;
+
+
+          if (response.state && response.state.collapsed == false) {
+            // restore previous state
+            $(".snippetor-ui .brand").trigger("click");
+          }
           if (callback)
             callback(response);
         });
@@ -1309,59 +1323,27 @@
       ns.uiApi.closeCurrentSnippet();
     }); // On click handler
 
-    var saveAction = findById("snippetor-save-action", "click", function(e) {
+    var saveAction = $(".snippetor-ui .saveButton").click(function(e) {
       e.stopPropagation();
       ns.extApi.saveSnippet();
     });
 
-    var editAction = findById("snippetor-edit-action", "click", function(e) {
+    var editAction = $(".snippetor-ui .editButton").click( function(e) {
       e.stopPropagation();
       ns.extApi.saveSnippet();
     });
 
-    /*
-        var snippetTitle = findById("snippetor-input-action-wrapper", "click", function(e) {
-          e.stopPropagation();
-        });
-
-        var xTitle = findById("snippetor-input-action", "click", function(e) {
-          e.stopPropagation();
-        });
-
-        var snipettorCreateAction = findById("snippetor-create-action", "click", function(e) {
-          e.stopPropagation();
-          var inTitle = findById("snippetor-input-action");
-          if (inTitle && inTitle.value) {
-            //ns.extApi.saveSnippet();
-            ns.extApi.createSnippet(inTitle.value, function() {
-              // activate save and hide create
-              ns.uiApi.toggleSave(true, false);
-              ns.uiApi.toggleCreate(false);
-            });
-          } else {
-            snipettorCreateAction.style.disabled = true;
-          }
-        });
-    */
-    /*   show/hide vertical menu
-        // Show/hide top menu
-        var snippetorToggleAction = findById("menu-dddd", "click", function(e) {
-          if (ns.extApi.state == "idle") {
-            ns.uiApi.toggleVMenu();
-          } else {
-            ns.uiApi.toggleVMenu(false);
-            //var rrr = document.getElementById("menu-dddd");
-            snippetorToggleAction.style.height = "49px";
-            if (snippetorToggleAction.style.width == "42px")
-              snippetorToggleAction.style.width = "100%";
-            else
-              snippetorToggleAction.style.width = "42px";
-          }
-        });
-    */
     // once more
     setTimeout(function() {
       subscribeForTheLineDblClick();
+/////////////////////////// TBD CACHE INITIAL STATE IN THE EXTENSION
+
+      $(".snippetor-ui div.activePage").hide();
+      $(".snippetor-ui .closeActivePage").hide();
+      $(".snippetor-ui .createNewSnippetForm").hide();
+      $(".snippetor-ui div.navigation").width("20px");
+      $(".snippetor-ui .brand").removeClass("active-vmenu");
+////////////////////////////
 
       $(".snippetor-ui .brand").click(function(e, postProcess) {
         e.preventDefault();
@@ -1377,6 +1359,8 @@
               $(".snippetor-ui div.activePage").hide());
             $(".snippetor-ui .closeActivePage").hide()
             $(".snippetor-ui div.navigation").width("20px");
+
+ns.extApi.updateSnippetState({collapsed: true});
           } else {
             // add class
             $(this).addClass("active-vmenu");
@@ -1385,6 +1369,7 @@
               $(".snippetor-ui div.activePage").show());
             $(".snippetor-ui .closeActivePage").show();
             $(".snippetor-ui div.navigation").removeAttr("style");
+ns.extApi.updateSnippetState({collapsed: false});
           }
         } else {
           // Drop down menu is required when there is no opened snippet
@@ -1448,7 +1433,7 @@
             // trigger no show top menu on brand menu
             ns.uiApi.creating = false;
           });
-alert(value);
+
         // create snippet
         ns.extApi.createSnippet(value, function() {
           ns.uiApi.refreshItemsUiList();
@@ -1473,6 +1458,8 @@ alert(value);
         $(".snippetor-ui .createNewSnippetForm").hide();
         $(".snippetor-ui div.navigation").width("20px");
         $(".snippetor-ui .brand").removeClass("active-vmenu");
+
+ns.extApi.updateSnippetState({collapsed: true});
       });
 
       $(".snippetor-ui a.close").click(function() {
