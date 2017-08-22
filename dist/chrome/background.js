@@ -82,7 +82,7 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
         onSaveSnippetDraft: function(success) {
             console.log("SNIPPET SAVED");
             sendRes({
-                notfied: true
+                notified: true
             });
             console.log("DRAFT ID == " + workingEnvironment[sender.tab.id]);
             this._broadcastTabs(sender.tab.id, "onSnippetChange", {

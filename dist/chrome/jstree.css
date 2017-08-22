@@ -1,3 +1,11 @@
+
+.snippetor-ui * {
+margin: 0;
+padding: 0;
+font-family: 'Lato', sans-serif;
+box-sizing: border-box;
+}
+
 .snipettor-active-menu-item {
   background-color: rgb(247, 183, 51);
 }

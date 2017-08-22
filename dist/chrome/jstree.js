@@ -378,8 +378,10 @@
           payload: idx
         }, function(response) {});
         // resetup snippet configuration
-        ns.extApi.wsid = idx;
-        ns.extApi.wiid = ns.extApi.snippetsList[ns.extApi.wsid].workingItem;
+        if (ns.extApi.snippetsList[idx] != null) {
+          ns.extApi.wsid = idx;
+          ns.extApi.wiid = ns.extApi.snippetsList[idx].workingItem;
+        }
       },
       openSnippetItem: function(id, callback) {
         ns.uiApi.showInitialBubbleRequestDone = false;
@@ -485,11 +487,16 @@
         }, function(response) {
           console.dir(response);
           ns.extApi.isInitialized = true;
-          ns.extApi.wsid = response.working;
-          ns.extApi.wiid = (response.working != undefined && response.working != null && response.working >= 0)
-                            ? response.snippets[response.working].workingItem : null;
+          // Complex check if we failed to unsubscribe from snippet
+          // correctly
+          var hasWorking = (response.working != undefined &&
+                            response.working != null &&
+                             response.working >= 0 &&
+                             response.snippets[response.working] != null);
+          ns.extApi.wsid = hasWorking ? response.working : null;
+          ns.extApi.wiid =  hasWorking ?
+              response.snippets[response.working].workingItem : null;
           ns.extApi.snippetsList = response.snippets;
-
 
           if (response.state && response.state.collapsed == false) {
             // restore previous state
@@ -1040,8 +1047,11 @@
       refreshVertMenu: function() {
         if (isSnippetor)
           return;
+        $('.ui-listofsnippets .ui-snippet-list').remove();
         for (var x in ns.extApi.snippetsList) {
           var snip = ns.extApi.snippetsList[x];
+          if (snip == null)
+            continue;
           var sname = snip.title;
           if (sname.length > 33) {
             sname = sname.substr(0, 30) + "...";
@@ -1105,7 +1115,8 @@
           return;
         var snippetsList = findById("menu-snippets-list");
         //snippetsList.innerHTML = '';
-        if (ns.extApi.wsid != null && ns.extApi.wsid != undefined) {
+        if (ns.extApi.wsid != null && ns.extApi.wsid != undefined
+           && ns.extApi.snippetsList[ns.extApi.wsid] != null) {
           // update according to the modified state
           var isMod = ns.extApi.snippetsList[ns.extApi.wsid].isModified;
           // clean current carousel and refresh it
@@ -1160,19 +1171,6 @@
         findById("menu-dddd").dispatchEvent(new Event("click"));
       },
       closeCurrentSnippet: function() {
-        // hide top line
-        findById("menu-dddd").dispatchEvent(new Event("click"));
-
-        // hide all menus
-        ns.uiApi.toggleSave(false, false);
-        ns.uiApi.toggleCreate(false);
-        ns.uiApi.toggleVMenu(false);
-
-        this.snippetsList = findById("menu-snippets-list");
-        //this.snippetsList.innerHTML = "";
-        //        if (this.bubbleElement)
-        //          this.bubbleElement.style.display = "none";
-
         // Notify extension about snippet close for the current tab
         ns.extApi.closeCurrentSnippet();
       },
@@ -1226,13 +1224,17 @@
       onSaveSnippet: function(payload) {
         console.log("SAVE SNIPPET HANDLE WIT CLOSE ");
 
-        if (ns.extApi.isWorkingSnippet(payload))
-          this.closeCurrentSnippet();
+        // Remove snippet from the menu list, because it is not draft anymore
+        ns.extApi.snippetsList[payload.working] = null;
+        if (ns.extApi.wsid == payload.working) {
+          $(".snippetor-ui a.close").trigger("click");
+        }
+
 
         // Remove snippet from the menu list, because it is not draft anymore
         ns.extApi.onSaveSnippet(payload.working);
-        this.refreshVertMenu();
 
+        this.refreshVertMenu();
       },
       //
       // Add snippet to the list of snippets on create
