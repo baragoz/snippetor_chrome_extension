@@ -825,8 +825,8 @@
 
         // Handle UI element position
         var bubbleElement = ns.uiBubbleApi._getBubbleUi(item, {
-          top: (absPos.top + 20 + document.scrollingElement.scrollTop) + "px",
-          left: (absPos.left + 10 + document.scrollingElement.scrollLeft) + "px",
+          top: (absPos.top  + document.scrollingElement.scrollTop) + "px",
+          left: (absPos.left + 50 + document.scrollingElement.scrollLeft) + "px",
           display: "block"
         }, this);
         // There is no page redirect support for a while
@@ -885,8 +885,8 @@
         };
 
         var bubbleElement = ns.uiBubbleApi._getBubbleUi(this.currentItem, {
-          top: (evt.pageY + 20) + "px",
-          left: (evt.pageX + 10) + "px",
+          top: (evt.pageY) + "px",
+          left: (evt.pageX + 50) + "px",
           display: "block"
         }, this);
 
