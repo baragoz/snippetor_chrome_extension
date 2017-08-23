@@ -127,6 +127,9 @@
       //
       function snippetorSubscribeFunction(siteHandler) {
         var lines = siteHandler.getLines();
+
+        if (lines == null || lines == undefined)
+          return;
         var updatedElementsCount = 0;
 
         function snippetorSelectHandler(e) {
@@ -175,14 +178,16 @@
             return (url.indexOf("https://github.com") == 0);
           },
           getLines: function() {
-            return document.getElementsByClassName("blob-num js-line-number");
+            return $(".js-line-number");
           },
           getLineNumberOnClick: function(element) {
             return element.attributes["data-line-number"].value;
           },
           getLineElementByNumber: function(lineNumber) {
-            return findById("L" + lineNumber);
-          }
+            var lines = this.getLines();
+            if (lines == null || lineNumber >= lines.length)
+              return null;
+            return lines[parseInt(lineNumber)];          }
         }, // GitHub
         {
           title: "BitBucket",
@@ -193,13 +198,10 @@
             return (url.indexOf("https://bitbucket.org") == 0);
           },
           getLines: function() {
-            var wrapper = document.getElementsByClassName("linenodiv");
-            if (wrapper.length == 0 || wrapper[0].childNodes.length == 0)
+            var lines = $(".linenodiv pre a");
+            if (lines.length == 0)
               return null;
-            var pre = wrapper[0].childNodes[0];
-            if (!pre)
-              return null;
-            return pre.childNodes;
+            return lines;
           },
           getLineNumberOnClick: function(element) {
             return element.innerHTML;
@@ -209,15 +211,9 @@
           //       one is a-tag and another one is #text == "\n"
           getLineElementByNumber: function(lineNumber) {
             var lines = this.getLines();
-            if (!lines)
+            if (lines == null || lineNumber >= lines.length)
               return null;
-            var line = pre.childNodes[(lineNumber - 1) * 2];
-
-            // Nothing loaded yet or something wrong with bitbucket structure
-            if (!line || !line.innerHTML || parseInt(line.innerHTML) != lineNumber)
-              return null;
-            // got valid line number
-            return line;
+            return lines[parseInt(lineNumber)];
           }
         }, // BitBucket
         {
@@ -226,13 +222,16 @@
             return (url.indexOf("https://cs.chromium.org") == 0);
           },
           getLines: function() {
-            return document.getElementsByClassName("lineNumber");
+            return $(".lineNumber");
           },
           getLineNumberOnClick: function(element) {
             return parseInt(element.innerHTML);
           },
           getLineElementByNumber: function(lineNumber) {
-            return findById("n" + lineNumber);
+            var lines = this.getLines();
+            if (lines == null || lineNumber >= lines.length)
+              return null;
+            return lines[parseInt(lineNumber)];
           }
         }, // cs.chromium.org
         {
@@ -247,7 +246,7 @@
             return element.id;
           },
           getLineElementByNumber: function(lineNumber) {
-            return findById(lineNumber);
+            return $("#" + lineNumber);
           }
         }
       ];
@@ -821,11 +820,12 @@
 
         ///////////////////// CREATE BUBBLE AT THE POSITION
         // Get possition of line in the code
+
         var absPos = line.getBoundingClientRect();
 
         // Handle UI element position
         var bubbleElement = ns.uiBubbleApi._getBubbleUi(item, {
-          top: (absPos.top  + document.scrollingElement.scrollTop) + "px",
+          top: (absPos.top - 10  + document.scrollingElement.scrollTop) + "px",
           left: (absPos.left + 50 + document.scrollingElement.scrollLeft) + "px",
           display: "block"
         }, this);
@@ -996,7 +996,7 @@
         var payload = url.length > 20 ? url.substr(url.length - 20) : url;
         // Add item to the List of snippets
         $('<div class="item modified ' + (isActive ? 'active' : '') + '">\
-              <div class="file">' + payload + '</div><!--\
+              <div class="sn-file">' + payload + '</div><!--\
               --><span>line: <b>' + line + '</b></span>\
               <a class="remove ui-snippet-item-remove"></a>\
               </div>').appendTo("div.owl-carousel");

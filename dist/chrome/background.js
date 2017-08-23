@@ -279,6 +279,10 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
                     x_url = x_url + "#L" + snippetsList[pos].items[itemId].line;
                 } else if (x_url.indexOf("https://cs.chromium.org") == 0) {
                     x_url = x_url + "?l=" + snippetsList[pos].items[itemId].line;
+                } else if (x_url.indexOf("https://bitbucket.org") == 0) {
+                    var pref = x_url.split("/").pop();
+                    x_url = x_url + "?fileviewer=file-view-default#"
+                            + pref + "-" + parseInt(snippetsList[pos].items[itemId].line);
                 }
 
                 chrome.tabs.update({

@@ -1504,7 +1504,7 @@ color: white;
     cursor: pointer;
 }
 .snippetor-ui .activePage .comments .area .item span,
-.snippetor-ui .activePage .comments .area .item .file {
+.snippetor-ui .activePage .comments .area .item .sn-file {
     display: block;
     position: relative;
 }
@@ -1543,7 +1543,7 @@ color: white;
     font-weight: 700;
     font-family: sans-serif;
 }
-.snippetor-ui .activePage .comments .area .item .file {
+.snippetor-ui .activePage .comments .area .item .sn-file {
     font-size: 12px;
     color: #fff;
 }
