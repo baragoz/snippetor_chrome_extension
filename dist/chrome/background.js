@@ -2,8 +2,12 @@
 
 var cachedTabs = [];
 
+chrome.tabs.onRemoved.addListener(function(tabId) {
+  cachedTabs[tabId] = false;
+});
+
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if (changeInfo.status !== 'loading') return;
+  if (changeInfo.status !== 'loading') return;
 
     chrome.tabs.executeScript(tabId, {
         code: 'var injected = window.octotreeInjected; window.octotreeInjected = true; console.log("INJECTING DATA ' + tabId + '"); if (window.subscribeForTheLineDblClick) window.subscribeForTheLineDblClick(); injected;',
@@ -261,7 +265,8 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
             console.log("dispatch: " + code);
             for (var x in cachedTabs) {
                 var tabId = parseInt(x);
-                if (tabId != senderId)
+                // if tab is still active
+                if (tabId != senderId && cachedTabs[tabId])
                     chrome.tabs.executeScript(tabId, {
                         code: code
                     }, function(result) {});
