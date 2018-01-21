@@ -852,7 +852,8 @@
           },
           onPrevClick: function() {
             if (ns.extApi.wiid > 0) {
-              ns.extApi.openSnippetItem(ns.extApi.wiid - 1);
+              ns.uiApi.updateActiveItem(ns.extApi.wiid-1, ns.extApi.wiid);
+              ns.extApi.openSnippetItem(ns.extApi.wiid-1);
             } else {
               // we should never get into this else
             }
@@ -860,7 +861,8 @@
           onNextClick: function() {
             var len = ns.extApi.snippetsList[ns.extApi.wsid].items.length;
             if (ns.extApi.wiid < len - 1) {
-                ns.extApi.openSnippetItem(ns.extApi.wiid + 1);
+              ns.uiApi.updateActiveItem(ns.extApi.wiid+1, ns.extApi.wiid);
+                ns.extApi.openSnippetItem(ns.extApi.wiid+1);
             } else {
               // somthing goes wrong, but we hanle it anyway
             }
@@ -978,6 +980,14 @@
           topSlider.trigger('next.owl.carousel');
         });
 
+      },
+      updateActiveItem: function(newVal, oldVal) {
+        var items = $("div.owl-stage>div.owl-item");
+        // change an active class
+        if (oldVal< items.length)
+            $(items[oldVal]).children("div.item").removeClass("active");
+        if (newVal< items.length)
+            $(items[newVal]).children("div.item").addClass("active");
       },
       //
       // Show new snippet item on the top list menu
@@ -1142,6 +1152,7 @@
               var pl = payload;
               return function(e) {
                 e.stopPropagation();
+                ns.uiApi.updateActiveItem(pl, ns.extApi.wiid);
                 ns.extApi.openSnippetItem(pl);
               };
             })(v));

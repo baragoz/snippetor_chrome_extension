@@ -1,6 +1,6 @@
 {
   "name": "Snippetor",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "manifest_version": 2,
   "author": "Evgeny Alexeyev",
   "description": "Software architecture snippets creator and viewer.",
@@ -16,6 +16,7 @@
     "https://umlsync-6e2da.firebaseapp.com/*",
     "https://snipettor.firebaseapp.com/*",
     "http://localhost:5000/*",
+    "http://localhost:4200/*",
     "storage"
   ],
   "optional_permissions": [

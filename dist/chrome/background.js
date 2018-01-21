@@ -166,7 +166,7 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
             var pos = workingEnvironment[sender.tab.id];
             if (pos != undefined && pos >= 0) {
                 chrome.tabs.create({
-                    'url': snipettorURL + "?save=draft",
+                    'url': snipettorURL + "/edit/draft",
                     active: true
                 }, function(tab) {
                     // Assign opened tab as snippet handler
