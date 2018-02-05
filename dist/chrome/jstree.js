@@ -2,6 +2,474 @@
 (function(jQuery) {
   "use strict";
   $(document).ready(function() {
+    // C++ simple parser
+    var Parser = {
+				lines: [],
+				line: 0,
+				stack: [],
+				tokens: [],
+				init: function(lines) {
+					// just save lines in the local structure
+					this.lines = lines;
+					this.line = 0;
+					this.tokens = [];
+					this.stack = [];
+					this.program = {
+						namespaces: [],
+						classes: []
+					};
+				},
+				//
+				// Wrap some char or substring with a spaces
+				// Uses to simplify tokenization process
+				//
+				addSpaces: function(sm, ch) {
+					if (sm.indexOf(ch) >= 0) {
+						return sm.split(ch).join(" " + ch + " ");
+					}
+					return sm;
+				},
+				//
+				// split all control symbols via spaces
+				// before splitting string on tokens
+				//
+				splitters: ["{", "{", "(", ")", ":", ";", "::", ","],
+				makeTokenable: function(sm) {
+					var res = sm;
+					for (var g in this.splitters) {
+						res = this.addSpaces(res, this.splitters[g]);
+					}
+					return res;
+				},
+				//
+				// split next line on tokens
+				//
+				getTokens: function(inp) {
+					if (!inp) return;
+					if (inp.indexOf("//") >= 0)
+						inp = inp.substr(0, inp.indexOf("//"));
+					return this.makeTokenable(inp).split(" ");
+				},
+				//
+				// provide next token
+				//
+				getNextToken: function() {
+					// check if there is no more tokens in the line
+					// then read next line
+					var next = "";
+
+					while (next == "" || next == '\n') {
+						if (this.tokens.length == 0) {
+							if (this.line == this.lines.length)
+								return null;
+							// get next tokkens
+							this.tokens = this.getTokens(this.lines[this.line++]);
+						}
+						next = this.tokens.shift();
+					}
+					return (next == "" ? null : next);
+				},
+				//
+				// Each file could consits of namsaces or classes
+				// there is no cache for a standalon functions
+				// or friends functions
+				//
+				program: {
+					namespaces: [],
+					classes: []
+				},
+				//
+				// Parse current program to extract namespaces and classes
+				//
+				parse: function() {
+					var x;
+					while (x = this.getNextToken()) {
+						if (x == "namespace") {
+							var nm = this.parseNamespace();
+							nm.classes = [];
+							nm.namespaces = [];
+							this.stack.push(nm);
+						} else if (x == "class" || x == "struct") {
+							// class parser detect } by  itself
+							var sm = this.parseClass(x);
+							if (sm == null) {
+								console.log("Parsing terminated");
+								return this.program;
+							}
+
+
+							if (this.stack.length == 0) {
+								this.program.classes.push(top);
+							}
+							if (this.stack.length > 0) {
+								this.stack[this.stack.length - 1].classes.push(sm);
+							}
+						} else if (x[0] == "}") {
+							// Check the closing scope
+							if (this.stack.length > 1) {
+								var top = this.stack.pop();
+								this.stack[this.stack.length - 1].namespaces.push(top);
+							}
+							if (this.stack.length == 1) {
+								var top = this.stack.pop();
+								this.program.namespaces.push(top);
+							}
+						}
+					}
+					return this.program;
+				},
+				//
+				// namespace token identified, parse all stuff after token
+				//
+				parseNamespace: function() {
+					var name = this.getNextToken();
+					console.log("Parsing namespace: " + name);
+					if (name.indexOf("{") >= 0)
+						return {
+							type: "namespace",
+							isAnonymouse: true
+						};
+					// Check next token
+					var x = this.getNextToken();
+					// it is not unnamed namespace
+					if (x.indexOf("{") >= 0)
+						return {
+							type: "namespace",
+							isAnonymouse: false,
+							value: name
+						};
+
+					console.log("Unhandled use-case with namespace parsing: " + name + " " + x);
+					// Try to read all token for unknown use-case
+					while (x && x.indexOf("{") < 0) {
+						name += x;
+						x = this.getNextToken();
+					}
+					return {
+						type: "namespace",
+						value: name,
+						isAnonymouse: false
+					};
+				},
+				//
+				// the "class" token identified, parse class start or
+				// read class methods
+				//
+				parseClass: function(ctype) {
+					var x = this.getNextToken();
+					console.log("parsing class: " + x);
+					var base = {};
+					//
+					// use-case:
+					// class {
+					// } arg;
+					//
+					if (x[0] == "{") {
+						// skip class declaration
+						this.skipTill("}", "{");
+						return {};
+					} else {
+						var name = x;
+						var x = this.getNextToken();
+
+						var subset = [];
+						subset.push(name);
+						// parse inheritance
+						while (x[0] != ":"
+							&& x[0] != "{"
+							&& x[0] != ";") {
+							subset.push(x);
+							x = this.getNextToken();
+						}
+
+						if (x[0] == ";") {
+							return {
+								type: ctype,
+								isDeclaration: true,
+								name: subset[subset.length -1],
+								subroutine: subset.join(" ")
+							};
+						}
+					}
+
+					if (x[0] == ":")
+						base = this.parseBaseClasses();
+
+					var result = this.parseClassDeclaration();
+					if (result == null)
+					  return null;
+					return {
+						type: ctype,
+						isDeclaration: true,
+						name: subset[subset.length -1],
+						subroutine: subset.join(" "), // CONTENT_EXPORT __attributes visibility etc..
+						attributes: result.attributes, // fields of the class
+						methods: result.methods, // methods of the class
+						base: base // the list of base classes
+					};
+				},
+				//
+				// read the base classes:
+				// TODO: add virtual support
+				// class A: public B, private C, protected D {
+				//    // some class details
+				// }
+				// TODO: add template classes support
+				// class A: public C<int, string, void*>, private X {}
+				//
+				inharitage: ["public", "private", "protected"],
+				parseBaseClasses: function() {
+					var base = [];
+					var visibility = "public";
+					var name = "";
+					var read_visibility = true;
+					var x = this.getNextToken();
+					//
+					// read till the class start
+					//
+					while (x[0] != "{") {
+						if (read_visibility && this.inharitage.indexOf(x) >= 0) {
+							visibility = x;
+						}
+						else if (x[0] == ",") {
+							read_visibility = true;
+							base.push({
+								visibility: visibility,
+								name: name
+							});
+							// reset class name
+							name = "";
+						} else {
+							read_visibility = false;
+							name += x + " ";
+						}
+						x = this.getNextToken();
+					} // while
+
+					// add the last class name which ends with {
+					if (name != "") {
+						base.push({
+							visibility: visibility,
+							name: name
+						});
+					}
+
+					return base;
+				},
+				//
+				// parse class methods and attributes line by line
+				// and tracking the visiblity options
+				//
+				parseClassDeclaration: function(classType, className) {
+					var result = {
+						subroutines: [], // the list of subroutines
+						fields: [],      // the list of fields
+						methods: [],     // the list of methods
+						classes: [],     // the list of classes
+						friends: []      // friend classes or methods
+					};
+					//
+					// The default visibility depends on class or structure
+					//
+					var visibility = (classType == "class" ? "private" : "public");
+
+					//
+					// the break should happen on "}" or end of file
+					//
+					while (true) {
+						var x = this.getNextToken();
+
+						// end of file, nothing to do
+						if (x == null)
+						  return result;
+
+						// end of the clas declaration
+						// Example:
+						// class A {
+						// }  <-- waiting for this token
+						if (x[0] == "}")
+							return result;
+
+						// 1. check that it is not visibility modificator
+						// For example
+						// class A {
+						//   public:      <-- waiting for public: private: or protected: modificator
+						//     int a;
+						// }
+						if (this.inharitage.indexOf(x) >= 0) {
+							var y = this.getNextToken();
+							if (y[0] != ":")
+								console.log("Unexpected handler: " + x + y);
+							visibility = x;
+							continue;
+						}
+						// 2. Handle nested classes:
+						//    probably it is class,struct or enum
+						if (["class", "struct"].indexOf(x) >= 0) {
+							var res = this.parseClass(x);
+							if (res == null)
+							  return result;
+							result.classes.push(res);
+							continue;
+						}
+						// 3. probably it is the constructor
+						//    or attribute of method. we have to read whole line to be sure what is it
+						var item = this.parseClassItem(x);
+
+						if (item == null)
+						  return null;
+
+						if (item) {
+							item.visibility = visibility;
+
+							if (item.type == "method") {
+								result.methods.push(item.name);
+							}
+							if (item.type == "field") {
+								result.fields.push(item);
+							}
+							if (item.type == "friend") {
+								result.friends.push(item);
+							}
+						}
+
+					}
+					return result;
+				},
+				//
+				// Parse the class items:
+				// - Field:
+				// - methods
+				// - constructor
+				// - destructor
+				// - friend declaration
+				//
+				// the rest of the  use-cases should be
+				// handled by the previous method
+				parseClassItem: function(start) {
+				  var x = start;
+					var result = {
+						type: "field"
+					};
+					var subset = [];
+					var is_opened = true;
+					var stack = [];
+
+					// insert first token
+					subset.push(x);
+
+					while (is_opened) {
+						x = this.getNextToken();
+						if (x == null)
+						  return null;
+
+						if (x[0] == ";") {
+							if (result.type == "field")
+							  result.name  = subset.join(" ");
+								return result;
+
+							if (result.type == "method") {
+								//
+								// int f() = 0;
+								// int f() const;
+								// int f() throw();
+								if (subset.length != 0) {
+									result.postfix = subset.join(" ");
+								}
+								// this use case should not handle the inline declaration
+								// for example:
+								// int f1(int x) const { print(x); }
+								return result;
+							}
+							return null;
+						}
+
+						if (x[0] == "(") {
+							  result.type = "method";
+								result.name = subset[subset.length -1];
+								result.return_type = subset.join(" ");
+								subset = [];
+								result.arguments = this.readMethodArguments();
+								continue;
+						}
+						if (x[0] == "{") {
+							if (result.type != "method") {
+								console.log("Invalid precondition: '{' - token should be after '(' only");
+								return null;
+							}
+							//
+							// int f() const { }
+							// int f1() throw() {}
+							if (subset.length != 0) {
+								result.postfix = subset.join(" ");
+							}
+							result.is_inline = true;
+							this.skipTill('}', '{');
+							// we are not expecting enything after }
+							// but probably user could add ";"
+							return result;
+							continue;
+						}
+
+						subset.push(x);
+					}
+				},
+				readMethodArguments: function() {
+					var result = {
+						arguments : []
+					};
+					var argument = "";
+					var x = this.getNextToken();
+
+					// TODO: check end of file
+					while (x != ')') {
+						if (x[0] == ',') {
+							result.arguments.push(argument);
+							argument = "";
+						}
+						else {
+							argument += " " + x;
+						}
+						// read next token for the iteration
+						x = this.getNextToken();
+					}
+					//
+					// int f1(void* x);
+					// there is not "," in that case and last arguments
+					// will be skiped without this check
+					// but if we have
+					// int f1(); then arguments will be empty substring
+					// and also ok
+					if (argument != "")
+						result.arguments.push(argument);
+					// the list of arguments
+					return result.arguments;
+				},
+				//
+				// we are not interested in what is going on inside class
+				// method. There for we can skip till the closing "}"
+				// class A {
+				//    int f1(int x) {
+				//         {
+				//           int y = 123; x = y; // etc...
+				//         }
+				//    }
+				// };
+				skipTill: function(item, open_item) {
+					var count = 1;
+          var x;
+					while (count > 0) {
+						 x = this.getNextToken();
+						 if (x.substr(0, item.length) == item) {
+							 --count;
+						 }
+						 else if (open_item && x.substr(0, item.length) == open_item) {
+							 ++count;
+						 }
+					}
+				}
+			};
+
 
     var ns = {
       extApi: {},
@@ -1323,6 +1791,7 @@
                     </div>\
                 </div>\
             <div class="pull-right closeActivePage">\
+                <a class="top-buttons index"></a>\
                 <a class="top-buttons minimize"></a>\
                 <a class="top-buttons close"></a>\
             </div>\
@@ -1467,6 +1936,24 @@ ns.extApi.updateSnippetState({collapsed: false});
         }
       })
 
+      $(".snippetor-ui a.index").click(function() {
+        var stack = [];
+        $(".stx-line").each(function(idx, item) {
+          stack.push($(item).text());
+        });
+        Parser.init(stack);
+        var res = Parser.parse();
+      $('\
+        <div class="snippetor_alert">\
+          <span class="snippetor_vclosebtn" onclick="this.parentElement.style.display=\'none\';">&times;</span> \
+          <strong>Danger!</strong> Indicates a dangerous or potentially negative action.\
+        </div>')
+        .appendTo(document.body)
+      console.log("==========================================");
+        console.log(res);
+        console.log("==========================================");
+      });
+
       $(".snippetor-ui a.minimize").click(function() {
         $(".snippetor-ui div.activePage").hide();
         $(".snippetor-ui .closeActivePage").hide();
@@ -1474,7 +1961,7 @@ ns.extApi.updateSnippetState({collapsed: false});
         $(".snippetor-ui div.navigation").width("20px");
         $(".snippetor-ui .brand").removeClass("active-vmenu");
 
-ns.extApi.updateSnippetState({collapsed: true});
+        ns.extApi.updateSnippetState({collapsed: true});
       });
 
       $(".snippetor-ui a.close").click(function() {
