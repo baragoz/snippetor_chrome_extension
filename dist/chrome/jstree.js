@@ -973,6 +973,17 @@
             callback(response);
         });
       },
+      //
+      // HANDLE SOURCE CODE INDEXING DATA
+      //
+      updateIndexedData: function(url, program) {
+        ns.extApi.snippetsList[ns.extApi.wsid].indexed = ns.extApi.snippetsList[ns.extApi.wsid].indexed || [];
+        ns.extApi.snippetsList[ns.extApi.wsid].indexed[url] = program;
+        // TODO: Notify background process
+      },
+      getIndexedData: function() {
+        return ns.extApi.snippetsList[ns.extApi.wsid].indexed;
+      },
 
       /////////////////////  callbacks
       onAddItem: function(payload) {
@@ -1937,21 +1948,77 @@ ns.extApi.updateSnippetState({collapsed: false});
       })
 
       $(".snippetor-ui a.index").click(function() {
-        var stack = [];
-        $(".stx-line").each(function(idx, item) {
-          stack.push($(item).text());
-        });
-        Parser.init(stack);
-        var res = Parser.parse();
-      $('\
-        <div class="snippetor_alert">\
-          <span class="snippetor_vclosebtn" onclick="this.parentElement.style.display=\'none\';">&times;</span> \
-          <strong>Danger!</strong> Indicates a dangerous or potentially negative action.\
-        </div>')
-        .appendTo(document.body)
-      console.log("==========================================");
-        console.log(res);
-        console.log("==========================================");
+
+        var data = ns.extApi.getIndexedData();
+        function show_dropdown_menu(payload, parent) {
+          var htmlView = "";
+          for (var x in payload) {
+            htmlView += "<tr info='" + x + "'>\
+              <td >X</td>\
+              <td class='snipettor-indexing-dropdown'>" + x + "</td>\
+              <td >)))</td>\
+            </tr>";
+          }
+
+          var header = "";
+          if (!parent) {
+            header = '<span class="snippetor_vclosebtn" style="float:right;" onclick="this.parentElement.style.display=\'none\';">&times;</span> \
+                      <button id="snipettor-indexing" style="margin-bottom: 10px; background-color:#39A9DB; border: 1px solid #39A9DB; color:white;border-radius: 2px;">index current file</button>\
+                      '; // header
+          }
+          // Attach the dropdown menu
+          $('\
+            <div class="snippetor_alert">\
+              <table style="width:100%; max-height:400px; overflow:scroll; border: 1px dashed white;">\
+                ' + header + '\
+                ' + htmlView + '\
+                </table> \
+                </div>')
+          .appendTo(document.body);
+
+          $(".snipettor-indexing-dropdown").click(function() {
+            var info = $(this).parent().attr("info");
+            if (info && payload[info]) {
+              //                                td -> tr-> table-> div
+              show_dropdown_menu(payload[info], $(this).parent().parent().parent());
+            }
+          });
+
+          // Assign handlers
+          if (!parent)
+            $("#snipettor-indexing").click(function() {
+              var stack = [];
+              $(".stx-line").each(function(idx, item) {
+                  stack.push($(item).text());
+                });
+
+              Parser.init(stack);
+              var payload = [];
+              var data2 = Parser.parse();
+              function push_recursion(prefix, data) {
+                for (var x in data.classes) {
+                  payload[prefix + "::" + data.classes[x].name] = data.classes[x];
+                  // apply for subclasses
+                  if (data.classes[x].classes) {
+                    console.log("> " + prefix + "::" + data.classes[x].name);
+                    push_recursion(prefix + "::" + data.classes[x].name, data.classes[x]);
+
+                  }
+                }
+                for (var y in data.namespaces) {
+                  var new_prefix = prefix;
+                  if (data.namespaces[y].value)
+                    new_prefix += "::" + data.namespaces[y].value;
+                    console.log("> " + new_prefix);
+                  push_recursion(new_prefix, data.namespaces[y]);
+                }
+              }
+              push_recursion("", data2);
+              ns.extApi.updateIndexedData(window.location.href, payload);
+            });
+        }
+
+        show_dropdown_menu(ns.extApi.getIndexedData(), null);
       });
 
       $(".snippetor-ui a.minimize").click(function() {
