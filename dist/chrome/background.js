@@ -373,6 +373,43 @@ chrome.runtime.onMessage.addListener(function(req, sender, sendRes) {
             }
             sendRes(false);
             return false;
+        },
+        removeIndexedItem: function(payload) {
+          var pos = workingEnvironment[sender.tab.id];
+          if (pos != undefined) {
+              delete snippetsList[pos].indexed[payload.url];
+              sendRes(true);
+
+              // Send item added event for all tabs
+              this._broadcastTabs(sender.tab.id, "onSnippetChange", {
+                  action: "remove-index",
+                  working: pos,
+                  payload: payload
+              });
+              return true;
+          }
+          sendRes(false);
+          return false;
+        },
+        addIndexedItem: function(payload) {
+          var pos = workingEnvironment[sender.tab.id];
+          if (pos != undefined) {
+              if (!snippetsList[pos].indexed)
+                snippetsList[pos].indexed = {};
+              snippetsList[pos].indexed[payload.url] = payload.item;
+              sendRes(true);
+              console.dir(snippetsList);
+
+              // Send item added event for all tabs
+              this._broadcastTabs(sender.tab.id, "onSnippetChange", {
+                  action: "add-index",
+                  working: pos,
+                  payload: payload
+              });
+              return true;
+          }
+          sendRes(false);
+          return false;
         }
     };
     console.log("HANDLE :" + req.type);

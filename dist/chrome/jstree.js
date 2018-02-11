@@ -487,6 +487,10 @@
           ns.uiApi.onOpenSnippet(payload);
         } else if (payload.action == "edit-state") {
           ns.uiApi.onEditStateSnippet(payload);
+        }  else if (payload.action == "add-index") {
+          ns.extApi.onAddIndexedItem(payload);
+        }  else if (payload.action == "remove-index") {
+          ns.extApi.onRemoveIndexedItem(payload);
         } else {
           alert("Unknow snippet action: " + payload.action);
         }
@@ -976,10 +980,33 @@
       //
       // HANDLE SOURCE CODE INDEXING DATA
       //
-      updateIndexedData: function(url, program) {
-        ns.extApi.snippetsList[ns.extApi.wsid].indexed = ns.extApi.snippetsList[ns.extApi.wsid].indexed || [];
-        ns.extApi.snippetsList[ns.extApi.wsid].indexed[url] = program;
-        // TODO: Notify background process
+      updateIndexedData: function(url, program, callback) {
+        if (program == null) {
+          chrome.runtime.sendMessage({
+            type: "removeIndexedItem",
+            payload: {
+              url: url
+            }
+          }, function(response) {
+            delete ns.extApi.snippetsList[ns.extApi.wsid].indexed[url];
+            if (callback) callback();
+          });
+          return;
+        }
+        //
+        // add an indexed item to the list
+        //
+        chrome.runtime.sendMessage({
+          type: "addIndexedItem",
+          payload: {
+            item: program,
+            url: url
+          }
+        }, function(response) {
+          ns.extApi.snippetsList[ns.extApi.wsid].indexed = ns.extApi.snippetsList[ns.extApi.wsid].indexed || [];
+          ns.extApi.snippetsList[ns.extApi.wsid].indexed[url] = program;
+          if (callback) callback();
+        });
       },
       getIndexedData: function() {
         return ns.extApi.snippetsList[ns.extApi.wsid].indexed;
@@ -1008,7 +1035,7 @@
       },
       onMoveItem: function(payload) {
         // Update snipettor cached data
-        var item = ns.extApi.snippetsList[payload.working].items[payload.payload.oldIndex];
+        var item = ns.extApi.snippetsList[payload.working].items[payload.payload.url];
         ns.extApi.snippetsList[payload.working].items.splice(payload.payload.oldIndex, 1);
         ns.extApi.snippetsList[payload.working].items.splice(payload.payload.newIndex, 0, item);
 
@@ -1017,7 +1044,26 @@
           // swap status if it is the same items
           ns.uiApi.onMoveItem(payload.payload.oldIndex, payload.payload.newIndex);
         }
+      },
+      onRemoveIndexedItem: function(payload) {
+        delete ns.extApi.snippetsList[payload.working].indexed[payload.payload.url];
 
+        // update snippet item UI if it was current item
+        if (payload.working == ns.extApi.wsid) {
+          // swap status if it is the same items
+          ns.uiApi.clearIndexedMenu();
+        }
+      },
+      onAddIndexedItem: function(payload) {
+        if (!ns.extApi.snippetsList[payload.working].indexed) {
+          ns.extApi.snippetsList[payload.working].indexed = [];
+        }
+        ns.extApi.snippetsList[payload.working].indexed[payload.payload.url] = payload.payload.item;
+        // update snippet item UI if it was current item
+        if (payload.working == ns.extApi.wsid) {
+          // swap status if it is the same items
+          ns.uiApi.clearIndexedMenu();
+        }
       }
     };
 
@@ -1768,6 +1814,9 @@
       },
       onUpdateItem: function(payload) {
           console.log("TODO: check if it bubble dialog is opened");
+      },
+      clearIndexedMenu: function() {
+        $(".snippetor_alert").remove();
       }
     };
 
@@ -1950,8 +1999,19 @@ ns.extApi.updateSnippetState({collapsed: false});
       $(".snippetor-ui a.index").click(function() {
 
         var data = ns.extApi.getIndexedData();
+
         function show_dropdown_menu(payload, parent) {
           var htmlView = "";
+          if (payload && payload.length > 0) {
+            for (var x = 0; x< payload.length; ++x) {
+              htmlView += "<tr info='" + x + "'>\
+                <td >X</td>\
+                <td class='snipettor-indexing-dropdown'>" + payload[x].prefix  + "::" + payload[x].name + "</td>\
+                <td >)))</td>\
+              </tr>";
+            }
+          }
+          else {
           for (var x in payload) {
             htmlView += "<tr info='" + x + "'>\
               <td >X</td>\
@@ -1959,6 +2019,7 @@ ns.extApi.updateSnippetState({collapsed: false});
               <td >)))</td>\
             </tr>";
           }
+         }
 
           var header = "";
           if (!parent) {
@@ -1975,6 +2036,20 @@ ns.extApi.updateSnippetState({collapsed: false});
                 </table> \
                 </div>')
           .appendTo(document.body);
+
+          $(".snippetor_alert").mouseover(function() {
+              $(".snippetor_alert").stop().fadeIn();
+          });
+
+          $(".snippetor_alert").mouseenter(function() {
+            $(".snippetor_alert").stop().fadeIn();
+          });
+
+          $(".snippetor_alert").mouseleave(function() {
+            $(".snippetor_alert").fadeOut(700, function() {
+                ns.uiApi.clearIndexedMenu();
+            });
+          });
 
           $(".snipettor-indexing-dropdown").click(function() {
             var info = $(this).parent().attr("info");
@@ -1997,7 +2072,8 @@ ns.extApi.updateSnippetState({collapsed: false});
               var data2 = Parser.parse();
               function push_recursion(prefix, data) {
                 for (var x in data.classes) {
-                  payload[prefix + "::" + data.classes[x].name] = data.classes[x];
+                  data.classes[x].prefix = prefix;
+                  payload.push(data.classes[x]);
                   // apply for subclasses
                   if (data.classes[x].classes) {
                     console.log("> " + prefix + "::" + data.classes[x].name);
@@ -2014,7 +2090,7 @@ ns.extApi.updateSnippetState({collapsed: false});
                 }
               }
               push_recursion("", data2);
-              ns.extApi.updateIndexedData(window.location.href, payload);
+              ns.extApi.updateIndexedData(window.location.href.split("?")[0], payload, ns.uiApi.clearIndexedMenu);
             });
         }
 
