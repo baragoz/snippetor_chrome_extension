@@ -1195,7 +1195,7 @@ color: white;
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 999;
+    z-index: 11999;
     background: #373F51;
     padding: 0px 15px;
     cursor: default;

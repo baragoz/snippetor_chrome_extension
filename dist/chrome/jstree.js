@@ -192,20 +192,28 @@
 						}
 					}
 
-					if (x[0] == ":")
+          var baseClasses = "";
+					if (x[0] == ":") {
 						base = this.parseBaseClasses();
+            var comma = "";
+            for (var t in base) {
+              baseClasses += comma + base[t].visibility + " " + base[t].name;
+              comma = ",";
+            }
+          }
 
 					var result = this.parseClassDeclaration();
 					if (result == null)
 					  return null;
 					return {
 						type: ctype,
-						isDeclaration: true,
+						isDeclaration: false,
 						name: subset[subset.length -1],
 						subroutine: subset.join(" "), // CONTENT_EXPORT __attributes visibility etc..
-						attributes: result.attributes, // fields of the class
+						fields: result.fields, // fields of the class
 						methods: result.methods, // methods of the class
-						base: base // the list of base classes
+						base: base, // the list of base classes
+            baseClasses: baseClasses
 					};
 				},
 				//
@@ -323,7 +331,7 @@
 							item.visibility = visibility;
 
 							if (item.type == "method") {
-								result.methods.push(item.name);
+								result.methods.push(item);
 							}
 							if (item.type == "field") {
 								result.fields.push(item);
@@ -331,6 +339,11 @@
 							if (item.type == "friend") {
 								result.friends.push(item);
 							}
+              if (item.type == "typedef") {
+                // TODO: add typedefs
+								//result.typedef.push(item);
+							}
+
 						}
 
 					}
@@ -408,7 +421,6 @@
 							// we are not expecting enything after }
 							// but probably user could add ";"
 							return result;
-							continue;
 						}
 
 						subset.push(x);
@@ -475,8 +487,14 @@
       extApi: {},
       uiApi: {}
     };
+    //
+    // There is no need to update the UI part for the snippetor web site
+    //
     var isSnippetor = (window.location.href.indexOf("http://localhost:5000") == 0 || window.location.href.indexOf("https://snipettor.firebaseapp.com") == 0);
     if (!isSnippetor) {
+      //
+      // Events from the background thread on the snippet related action
+      //
       window.addEventListener("onSnippetChange", function(evt) {
         var payload = evt.detail;
         if (payload.action == "save") {
@@ -496,6 +514,9 @@
         }
       });
 
+      //
+      // Events from the backgroun thread about snippet item change
+      //
       window.addEventListener("onSnippetItemChange", function(evt) {
         var payload = evt.detail;
         if (payload.action == "add") {
@@ -514,71 +535,143 @@
       });
     }
 
+    //
+    // Add event listener from the snippetor Website
+    //
     window.addEventListener("onSnipettorAction", function(evt) {
       var payload = evt.detail;
-      console.dir(payload);
-      if (payload.action == "saved-draft") {
+        console.log("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR " + payload.action);
+      //
+      // Request the inital list of snippets and check
+      // if current tab has an opened snippet
+      //
+      if (payload.action == "GetInitialState") {
+        ns.extApi.init(function(response) {
+          window.dispatchEvent(new CustomEvent("onInit", {
+            detail: response
+          }));
+        });
+      }
+      //
+      // Get current indexed payload
+      //
+      else if (payload.action == "GetInitialIndex") {
+
+        ns.extApi.init(function(response) {
+          if (response.working >= 0) {
+             var index = response.snippets[response.working].indexed || [];
+             window.dispatchEvent(new CustomEvent("onIndexChanged", {
+               detail: index
+             }));
+           }
+        });
+      }
+      //
+      // Open an existing snippet
+      //
+      else if (payload.action == "open-snippet") {
+        chrome.runtime.sendMessage({
+          type: "onOpenSnippet",
+          payload: payload.data
+        }, function(response) {});
+      }
+      //
+      // Save snippet draft
+      //
+      else if (payload.action == "saved-draft") {
         chrome.runtime.sendMessage({
           type: "onSaveSnippetDraft",
           payload: {
             uid: payload.payload.uid
           }
         }, function(response) {});
-      } else if (payload.action == "open-snippet") {
-        chrome.runtime.sendMessage({
-          type: "onOpenSnippet",
-          payload: payload.data
-        }, function(response) {});
       }
-      if (payload.action == "select-snippet") {
+      //
+      // opend a working snippet
+      //
+      else if (payload.action == "select-snippet") {
         chrome.runtime.sendMessage({
           type: "openSnippet",
           payload: payload.data
         }, function(response) {});
-      } else if (payload.action == "GetInitialState") {
-        ns.extApi.init(function(response) {
-          window.dispatchEvent(new CustomEvent("onInit", {
-            detail: response
-          }));
-        });
-
-      } else if (payload.action == "subscribe") {
+      }
+      //
+      // subscribe current tab for a snippet
+      //
+      else if (payload.action == "subscribe") {
         chrome.runtime.sendMessage({
           type: "subscribeSnippet",
           payload: payload.payload
         }, function(response) {
           console.log("snippet has been subscribed. TODO: send a feedback message");
         });
-
-      } else if (payload.action == "unsubscribe") {
+      }
+      //
+      // Unsubscribe from the snippet
+      //
+      else if (payload.action == "unsubscribe") {
         chrome.runtime.sendMessage({
           type: "unsubscribeSnippet",
           payload: payload.payload
         }, function(response) {
           console.log("snippet has been unsubscribed. TODO: send a feedback message");
         });
-      } else if (payload.action == "edit-current-snippet") {
+      }
+      //
+      // On snippet title change
+      //
+      else if (payload.action == "change-snippet-title") {
+        chrome.runtime.sendMessage({
+          type: "onTitleChange",
+          payload: payload.data
+        }, function(response) {});
+      }
+      //
+      // On snippet description change
+      //
+      else if (payload.action == "change-snippet-description") {
+        chrome.runtime.sendMessage({
+          type: "onDescriptionChange",
+          payload: payload.data
+        }, function(response) {});
+      }
+      //
+      // Snippet changed to the edit mode
+      //
+      else if (payload.action == "edit-current-snippet") {
         chrome.runtime.sendMessage({
           type: "editCurrentSnippet",
           payload: payload.payload
         }, function(response) {
           console.log("snippet edit state has been updated");
         });
-      } else if (payload.action == "select-snippet") {} else if (payload.action == "update-snippet-item") {
+      }
+      //
+      // Snippet item was updated
+      //
+      else if (payload.action == "update-snippet-item") {
         chrome.runtime.sendMessage({
           type: "updateItem",
           payload: payload.payload
         }, function(response) {
           console.log("snippet has been updated");
         });
-      } else if (payload.action == "delete-snippet-item") {
+      }
+      //
+      // Snippet item was removed
+      //
+      else if (payload.action == "delete-snippet-item") {
         chrome.runtime.sendMessage({
           type: "removeItem",
           payload: payload.payload.index
         }, function(response) {
           console.log("snippet has been updated");
         });
-      } else if (payload.action == "move-snippet-item") {
+      }
+      //
+      // Snippet item changed position (index)
+      //
+      else if (payload.action == "move-snippet-item") {
         chrome.runtime.sendMessage({
           type: "moveItem",
           payload: payload.payload
@@ -709,7 +802,7 @@
         {
           title: "UmlSync",
           checkUrl: function(url) {
-            return (url.indexOf("https://umlsync-6e2da.firebaseapp.com") == 0);
+            return (url.indexOf("https://umlsync-aef8d.firebaseapp.com") == 0);
           },
           getLines: function() {
             return document.getElementsByClassName("us-element-border");
@@ -853,6 +946,8 @@
           ns.extApi.wsid = idx;
           ns.extApi.wiid = ns.extApi.snippetsList[idx].workingItem;
         }
+        // Notify about snippet open and new index availability
+        ns.extApi.clearMenuAndNotifyApp();
       },
       openSnippetItem: function(id, callback) {
         ns.uiApi.showInitialBubbleRequestDone = false;
@@ -876,6 +971,8 @@
           console.log("Snippet saved probably");
           if (callback)
             callback(response);
+          // notify about snippet close
+          ns.extApi.clearMenuAndNotifyApp();
         });
       },
       removeItem: function(idx) {
@@ -989,7 +1086,7 @@
             }
           }, function(response) {
             delete ns.extApi.snippetsList[ns.extApi.wsid].indexed[url];
-            if (callback) callback();
+            if (callback) callback(ns.extApi.snippetsList[ns.extApi.wsid].indexed);
           });
           return;
         }
@@ -1005,7 +1102,7 @@
         }, function(response) {
           ns.extApi.snippetsList[ns.extApi.wsid].indexed = ns.extApi.snippetsList[ns.extApi.wsid].indexed || [];
           ns.extApi.snippetsList[ns.extApi.wsid].indexed[url] = program;
-          if (callback) callback();
+          if (callback) callback(ns.extApi.snippetsList[ns.extApi.wsid].indexed);
         });
       },
       getIndexedData: function() {
@@ -1050,8 +1147,7 @@
 
         // update snippet item UI if it was current item
         if (payload.working == ns.extApi.wsid) {
-          // swap status if it is the same items
-          ns.uiApi.clearIndexedMenu();
+          ns.extApi.clearMenuAndNotifyApp();
         }
       },
       onAddIndexedItem: function(payload) {
@@ -1061,9 +1157,20 @@
         ns.extApi.snippetsList[payload.working].indexed[payload.payload.url] = payload.payload.item;
         // update snippet item UI if it was current item
         if (payload.working == ns.extApi.wsid) {
-          // swap status if it is the same items
-          ns.uiApi.clearIndexedMenu();
+          ns.extApi.clearMenuAndNotifyApp();
         }
+      },
+      clearMenuAndNotifyApp: function() {
+        // swap status if it is the same items
+        ns.uiApi.clearIndexedMenu();
+        //
+        // Notify the application about index change
+        //
+        if (ns.extApi.wsid >= 0)
+          window.dispatchEvent(new CustomEvent("onIndexChanged", {
+            detail: ns.extApi.snippetsList[ns.extApi.wsid].indexed
+          }));
+
       }
     };
 
@@ -2055,7 +2162,15 @@ ns.extApi.updateSnippetState({collapsed: false});
             var info = $(this).parent().attr("info");
             if (info && payload[info]) {
               //                                td -> tr-> table-> div
-              show_dropdown_menu(payload[info], $(this).parent().parent().parent());
+              if (!parent) {
+                show_dropdown_menu(payload[info], $(this).parent().parent().parent());
+              }
+              else {
+
+                window.dispatchEvent(new CustomEvent("onIndexedItemSelected", {
+                  detail: payload[info]
+                }));
+              }
             }
           });
 
@@ -2090,7 +2205,13 @@ ns.extApi.updateSnippetState({collapsed: false});
                 }
               }
               push_recursion("", data2);
-              ns.extApi.updateIndexedData(window.location.href.split("?")[0], payload, ns.uiApi.clearIndexedMenu);
+              //
+              // request an update of the indexed data
+              //
+              ns.extApi.updateIndexedData(
+                window.location.href.split("?")[0],
+                payload,
+                ns.extApi.clearMenuAndNotifyApp);
             });
         }
 
